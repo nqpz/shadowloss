@@ -3,6 +3,8 @@
 shadowloss
 ==========
 
+There's no release out yet.
+
 You have no shadow, your limbs are all sticks, and your movements look
 funny. You have been transformed into a stickman.
 

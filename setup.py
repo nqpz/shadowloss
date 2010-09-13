@@ -14,7 +14,7 @@ for x in os.walk(datadir):
 readme = open('README.txt').read()
 conf = dict(
     name=program_name,
-    version=version,
+    version=version_text,
     author='Niels Serup',
     author_email='ns@metanohi.org',
     packages=['shadowloss', 'shadowloss.external'],
