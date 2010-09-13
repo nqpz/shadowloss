@@ -1,0 +1,16 @@
+The Python files of Naghni are licensed under the GNU
+General Public License version 3 (or any later version).
+shadowloss is copyright © 2010 Niels Serup.
+
+Data files, described more carefully below, differ in licensing as
+well as authors. Note that non-Niels Serup authors are not part of the
+shadowloss project. They have merely been nice and released their
+works under free licenses.
+
+List of files with their respective licenses and authors (inside data/)
+########################################################
+../logo/*
+License: CC BY-SA 3.0+
+Author:  Niels Serup <ns@metanohi.org>
+Copyright © 2010 Niels Serup
+Own work

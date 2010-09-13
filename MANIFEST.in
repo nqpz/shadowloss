@@ -1,0 +1,3 @@
+include *.txt
+include logo/shadowloss-logo.svg
+include logo/convert-to-png.sh

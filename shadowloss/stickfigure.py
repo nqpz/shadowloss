@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# shadowloss: a game against time
+# shadowloss: a stickman-oriented game against time
 # Copyright (C) 2010  Niels Serup
 
 # This file is part of shadowloss.
@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with shadowloss.  If not, see <http://www.gnu.org/licenses/>.
 
-##[ Name        ]## stickfigure
+##[ Name        ]## shadowloss.stickfigure
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
 ##[ Description ]## Contains the class for creating and drawing stick figures
 ##[ Start date  ]## 2010 September 12
@@ -30,8 +30,17 @@ LINE = 1
 CIRCLE = 2
 
 class StickFigure(object):
-    def __init__(self, parent):
+    def __init__(self, parent, offset_x=None, offset_y=None):
         self.parent = parent
+        if offset_x is None:
+            self.get_offset_x = lambda info: 0
+        else:
+            self.get_offset_x = offset_x
+        if offset_y is None:
+            self.get_offset_y = lambda info: 0
+        else:
+            self.get_offset_y = offset_y
+        self.get_offset = lambda info: (self.get_offset_x(info), self.get_offset_y(info))
         self.objects = []
         class Container: pass
         self.info = Container()
@@ -46,6 +55,7 @@ class StickFigure(object):
         step = step % 1000
         self.info.step = step
         self.info.speed = speed
+        offset = self.get_offset(self.info)
         points = {}
         objs = []
         for x in self.objects:
@@ -93,10 +103,10 @@ class StickFigure(object):
         new_objs = []
         for x in objs:
             if x[0] == LINE:
-                new_objs.append((x[0], [x[1][i] - smallest[i] for i in range(2)],
-                                 [x[2][i] - smallest[i] for i in range(2)]))
+                new_objs.append((x[0], [x[1][i] - smallest[i] + offset[i] for i in range(2)],
+                                 [x[2][i] - smallest[i] + offset[i] for i in range(2)]))
             elif x[0] == CIRCLE:
-                new_objs.append((x[0], [x[1][i] - smallest[i] for i in range(2)],
+                new_objs.append((x[0], [x[1][i] - smallest[i] + offset[i] for i in range(2)],
                                  x[2]))
         objs = new_objs
         xs = []
@@ -125,7 +135,7 @@ class StickFigure(object):
     def end(self):
         pass
 
-class LinearlyChangingAngle(object):
+class LinearChange(object):
     def __init__(self, *intervals):
         self.intervals = intervals
 
@@ -164,13 +174,13 @@ if __name__ == '__main__':
             pos = self.normalize_point(pos, body_rect)
             pygame.draw.circle(SCREEN, (255, 255, 255), pos, int(radius))
 
-    stickman = StickFigure(SimpleSystem())
+    stickman = StickFigure(SimpleSystem(), None, LinearChange((0, 250, 0, 25), (250, 500, 25, 5), (500, 750, 5, 10), (750, 1000, 10, 0)))
     # Create its limbs
-    stickman.add_line(None, 'A', LinearlyChangingAngle((0, 500, 70, 110), (500, 1000, 110, 70)), lambda info: 40)
-    stickman.add_line(None, 'A', LinearlyChangingAngle((0, 500, 110, 70), (500, 1000, 70, 110)), lambda info: 40)
+    stickman.add_line(None, 'A', LinearChange((0, 500, 70, 110), (500, 1000, 110, 70)), lambda info: 40)
+    stickman.add_line(None, 'A', LinearChange((0, 500, 110, 70), (500, 1000, 70, 110)), lambda info: 40)
     stickman.add_line('A', 'B', lambda info: 90, lambda info: 30)
-    stickman.add_line('B', None, LinearlyChangingAngle((0, 500, -140, -40), (500, 1000, -40, -140)), lambda info: 25)
-    stickman.add_line('B', None, LinearlyChangingAngle((0, 500, -40, -140), (500, 1000, -140, -40)), lambda info: 25)
+    stickman.add_line('B', None, LinearChange((0, 500, -140, -40), (500, 1000, -40, -140)), lambda info: 25)
+    stickman.add_line('B', None, LinearChange((0, 500, -40, -140), (500, 1000, -140, -40)), lambda info: 25)
     stickman.add_line('B', 'C', lambda info: 50 * info.speed, lambda info: 20)
     stickman.add_circle('C', lambda info: 13)
 
