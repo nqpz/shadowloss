@@ -24,11 +24,13 @@
 ##[ Description ]## Controls the major aspects of the game
 ##[ Start date  ]## 2010 September 13
 
+import os
 import pygame
 from pygame.locals import *
 from shadowloss.settingsparser import SettingsParser
 import shadowloss.various as various
 import shadowloss.generalinformation as ginfo
+from shadowloss.level import Level
 
 config_file_translations = {
     'verbose': 'term_verbose',
@@ -47,8 +49,10 @@ class World(SettingsParser):
     virtual_size=(640, 480)
 
     def __init__(self, **options):
-        SettingsParser.__init__(self, config_file_translations, **options)
+        SettingsParser.__init__(self, config_file_translations,
+                                **options)
         self.set_if_nil('error_function', various.usable_error)
+        self.set_if_nil('data_dir', ginfo.global_data_dir)
         self.set_if_nil('term_verbose', True)
         self.set_if_nil('term_color_errors', True)
         self.set_if_nil('use_fullscreen', False)
@@ -61,10 +65,6 @@ class World(SettingsParser):
         self.set_if_nil('mute', False)
 
         self.levels = options.get('levels') or []
-        if self.levels:
-            self.set_current_level(0)
-        else:
-            self.set_current_level(None)
 
         if self.disp_size is not None:
             try:
@@ -87,12 +87,19 @@ class World(SettingsParser):
     def status(self, msg):
         print ginfo.program_name + ': ' + msg
 
+    def create_level(self, path):
+        return Level(self, path)
+
     def set_current_level(self, num):
         if num is None:
             self.current_level = None
         else:
             self.current_level = self.levels[num]
         self.current_level_index = num
+
+    def next_level(self):
+        self.set_current_level((self.current_level_index + 1) %
+                               len(self.levels))
 
     def start(self):
         pygame.display.init()
@@ -104,26 +111,67 @@ class World(SettingsParser):
 
         pygame.display.set_caption(ginfo.program_name)
 
+        self.std_font = pygame.font.Font(
+            os.path.join(self.data_dir, 'fonts',
+            'UniversalisADFCdStd-Bold.otf'), 250)
+
+        if not self.levels:
+            for x in os.walk(os.path.join(self.data_dir, 'levels')):
+                for y in x[2]:
+                    self.levels.append(os.path.join(x[0], y))
+        self.levels = [self.create_level(x) for x in self.levels]
+        self.set_current_level(0)
+
+
         self.clock = pygame.time.Clock()
         self.run()
 
     def end(self):
         pass
 
-    def normalize_point(self, p, rect):
+    def center_point(self, p, rect):
         x = ((self.virtual_size[0] - rect[0]) / 2 + p[0]) * self.disp_zoom
         y = (self.virtual_size[1] - p[1]) * self.disp_zoom
         return int(x), int(y)
- 
+
+    def normal_point(self, p, rect):
+        x = p[0] * self.disp_zoom
+        y = (self.virtual_size[1] - p[1] - rect[1]) * self.disp_zoom
+        return int(x), int(y)
+
+    def real_point(self, x, y):
+        x = self.screen_offset[0] + x * self.disp_zoom
+        y = self.screen_offset[1] + y * self.disp_zoom
+        return [x, y]
+
     def draw_line(self, p1, p2, body_rect):
-        p1 = self.normalize_point(p1, body_rect)
-        p2 = self.normalize_point(p2, body_rect)
+        p1 = self.center_point(p1, body_rect)
+        p2 = self.center_point(p2, body_rect)
         pygame.draw.line(self.screen, (255, 255, 255), p1, p2, 3)
 
     def draw_circle(self, pos, radius, body_rect):
-        pos = self.normalize_point(pos, body_rect)
+        pos = self.center_point(pos, body_rect)
         pygame.draw.circle(self.screen, (255, 255, 255), pos,
                            int(radius * self.disp_zoom))
+
+    def draw_wall(self, start, end):
+        start = self.real_point(start, 0)
+        end = self.real_point(end, 0)
+        end[1] += self.real_size[1]
+        size = [end[i] - start[i] for i in range(2)]
+        rect = pygame.Rect(start, size)
+        pygame.draw.rect(self.screen, (255, 255, 255), rect)
+
+    def create_text(self, text, text_height=75):
+        surf = self.std_font.render(text, True, (255, 255, 255))
+        size = surf.get_size()
+        ratio = size[1] / text_height
+        size = int(size[0] / ratio), text_height
+        surf = pygame.transform.smoothscale(surf, size)
+        return surf
+
+    def blit(self, surf, pos):
+        self.screen.blit(surf, self.normal_point(pos, surf.get_size()))
 
     def create_screen(self):
         # The screen is by default just a window of the same
@@ -210,15 +258,26 @@ class World(SettingsParser):
 
         # Create the background surface
         self.bgsurface = pygame.Surface(self.real_size).convert()
-        self.bgsurface.fill((0, 255, 0))
+        self.bgsurface.fill((0, 0, 0))
 
     def run(self):
-        while True:
+        done = False
+        while not done:
+            letters = []
+            for x in pygame.event.get():
+                if x.type == KEYDOWN:
+                    letter = x.unicode.lower()
+                    if letter:
+                        letters.append(letter)
+                elif x.type == QUIT:
+                    done = True
+            self.current_level.update(letters)
             self.draw()
             self.clock.tick(30)
             
     def draw(self):
         self.screen.blit(self.bgsurface, (0, 0))
+        self.current_level.draw()
 
         if self.screen_bars[0] is not None:
             self.screen.blit(self.screen_bars[0], (0, 0))

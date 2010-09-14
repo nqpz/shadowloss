@@ -14,3 +14,15 @@ License: CC BY-SA 3.0+
 Author:  Niels Serup <ns@metanohi.org>
 Copyright © 2010 Niels Serup
 Own work
+########################################################
+fonts/UniversalisADFCdStd-Bold.otf
+License: GPLv2 with font exception
+Designer: Hirwen Harendal
+Copyright © Arkandis Digital Foundry
+########################################################
+levels/*
+License: GPLv3+
+Author:  Niels Serup <ns@metanohi.org>
+Copyright © 2010 Niels Serup
+Own work
+########################################################

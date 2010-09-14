@@ -29,12 +29,15 @@ from optparse import OptionParser
 
 try:
     import shadowloss.various
+    INSTALLED = True
 except ImportError:
     # shadowloss is not installed, trying an ugly fix. Considering that
     # this executable is in the scripts/ directory, appending the
     # directory one level up to sys.path should make importing possible.
     import os.path
-    sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
+    basedir = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
+    sys.path.append(basedir)
+    INSTALLED = False
 
 import shadowloss.various as various
 from shadowloss.world import World
@@ -98,6 +101,8 @@ options, args = parser.parse_args()
 options = eval(str(options))
 options['levels'] = args or None
 options['error_function'] = parser.error
+if not INSTALLED:
+    options['data_dir'] = os.path.join(basedir, 'data')
 
 setproctitle(parser.prog)
 

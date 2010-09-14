@@ -149,6 +149,8 @@ if __name__ == '__main__':
     import pygame
     import datetime
 
+    print 'This is just an example, not a game.'
+
     SIZE = (400, 300)
     pygame.display.init()
     SCREEN = pygame.display.set_mode(SIZE)
