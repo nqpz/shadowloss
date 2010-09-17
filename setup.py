@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 from distutils.core import setup
 import os
+import fnmatch
+
 ginfo_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                           'shadowloss', 'generalinformation.py')
 execfile(ginfo_file)
 
 data = []
 datadir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+pref = len(datadir) + 1
 for x in os.walk(datadir):
-    data.append((os.path.join(global_data_dir, x[0]),
-                 [os.path.join(x[0], y) for y in x[2]]))
+    files = []
+    for y in x[2]:
+        fn = os.path.join(x[0], y)
+        if not fnmatch.fnmatch(fn, '*~') and \
+                not fnmatch.fnmatch(fn, '#*#'):
+            files.append(fn)
+    data.append((os.path.join(global_data_dir, x[0][pref:]),
+                 files))
 
 readme = open('README.txt').read()
 conf = dict(
@@ -17,7 +26,7 @@ conf = dict(
     version=version_text,
     author='Niels Serup',
     author_email='ns@metanohi.org',
-    packages=['shadowloss', 'shadowloss.external'],
+    packages=['shadowloss', 'shadowloss.builtinstickfigures', 'shadowloss.external'],
     scripts=['scripts/shadowloss'],
     data_files=data,
     requires=['qvikconfig'],

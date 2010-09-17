@@ -31,6 +31,7 @@ from shadowloss.settingsparser import SettingsParser
 import shadowloss.various as various
 import shadowloss.generalinformation as ginfo
 from shadowloss.level import Level
+import cairogame
 
 config_file_translations = {
     'verbose': 'term_verbose',
@@ -46,7 +47,7 @@ config_file_translations = {
 }
 
 class World(SettingsParser):
-    virtual_size=(640, 480)
+    virtual_size=(600, 200)
 
     def __init__(self, **options):
         SettingsParser.__init__(self, config_file_translations,
@@ -129,50 +130,6 @@ class World(SettingsParser):
     def end(self):
         pass
 
-    def center_point(self, p, rect):
-        x = ((self.virtual_size[0] - rect[0]) / 2 + p[0]) * self.disp_zoom
-        y = (self.virtual_size[1] - p[1]) * self.disp_zoom
-        return int(x), int(y)
-
-    def normal_point(self, p, rect):
-        x = p[0] * self.disp_zoom
-        y = (self.virtual_size[1] - p[1] - rect[1]) * self.disp_zoom
-        return int(x), int(y)
-
-    def real_point(self, x, y):
-        x = self.screen_offset[0] + x * self.disp_zoom
-        y = self.screen_offset[1] + y * self.disp_zoom
-        return [x, y]
-
-    def draw_line(self, p1, p2, body_rect):
-        p1 = self.center_point(p1, body_rect)
-        p2 = self.center_point(p2, body_rect)
-        pygame.draw.line(self.screen, (255, 255, 255), p1, p2, 3)
-
-    def draw_circle(self, pos, radius, body_rect):
-        pos = self.center_point(pos, body_rect)
-        pygame.draw.circle(self.screen, (255, 255, 255), pos,
-                           int(radius * self.disp_zoom))
-
-    def draw_wall(self, start, end):
-        start = self.real_point(start, 0)
-        end = self.real_point(end, 0)
-        end[1] += self.real_size[1]
-        size = [end[i] - start[i] for i in range(2)]
-        rect = pygame.Rect(start, size)
-        pygame.draw.rect(self.screen, (255, 255, 255), rect)
-
-    def create_text(self, text, text_height=75):
-        surf = self.std_font.render(text, True, (255, 255, 255))
-        size = surf.get_size()
-        ratio = size[1] / text_height
-        size = int(size[0] / ratio), text_height
-        surf = pygame.transform.smoothscale(surf, size)
-        return surf
-
-    def blit(self, surf, pos):
-        self.screen.blit(surf, self.normal_point(pos, surf.get_size()))
-
     def create_screen(self):
         # The screen is by default just a window of the same
         # dimensions as the virtual screen. This can be changed to
@@ -190,7 +147,8 @@ class World(SettingsParser):
                 flags = flags | HWSURFACE
             if self.use_doublebuf:
                 flags = flags | DOUBLEBUF
-            self.real_size = self.virtual_size
+            self.window_size = self.virtual_size
+            self.disp_zoom = 1
         elif self.use_fakefullscreen or self.disp_size is not None:
             # Get dimensions (screen size if use_fakefullscreen,
             # user-specified size otherwise)
@@ -223,12 +181,13 @@ class World(SettingsParser):
                 else:                     a = 1; b = 0
 
                 self.disp_zoom = scales[a]
-                self.screen_offset[b] = int((screen_size[b] - self.virtual_size[b] * self.disp_zoom) / 2)
+                self.screen_offset[b] = int((screen_size[b] -
+                                             self.virtual_size[b] * self.disp_zoom) / 2)
                 barsize = [0, 0]
                 barsize[a] = screen_size[a]
                 barsize[b] = self.screen_offset[b]
-            self.real_size = screen_size
-            self.status('Modified size of game is: %dx%d' % tuple(self.real_size))
+            self.window_size = screen_size
+            self.status('Modified size of game is: %dx%d' % tuple(self.window_size))
             if not self.use_border or self.use_fakefullscreen:
                 flags = NOFRAME
             if self.use_doublebuf:
@@ -239,10 +198,10 @@ class World(SettingsParser):
         else:
             # Check if a zoom level has been given
             if self.disp_zoom != 1:
-                self.real_size = [int(x * self.disp_zoom) for x in self.virtual_size]
-                self.status('Scaled size of game is: %dx%d' % tuple(self.real_size))
+                self.window_size = [int(x * self.disp_zoom) for x in self.virtual_size]
+                self.status('Scaled size of game is: %dx%d' % tuple(self.window_size))
             else:
-                self.real_size = self.virtual_size
+                self.window_size = self.virtual_size
             if not self.use_border or self.use_fakefullscreen:
                 flags = NOFRAME
             if self.use_doublebuf:
@@ -251,13 +210,20 @@ class World(SettingsParser):
                 else:
                     flags = DOUBLEBUF
 
+        self.real_size = [self.window_size[i] - self.screen_offset[i]
+                          * 2 for i in range(2)]
+        if self.disp_zoom is None:
+            self.disp_zoom = float(self.real_size) / self.virtual_size
         # Finally create the screen
-        self.screen = pygame.display.set_mode(self.real_size, flags)
+        self.screen = pygame.display.set_mode(self.window_size, flags,
+                                              32)
+        cairogame.set_screen(self.screen)
         if barsize is not None:
             self.screen_bars[b] = pygame.Surface(barsize).convert()
+            self.screen_bars[b].fill((255, 255, 255))
 
         # Create the background surface
-        self.bgsurface = pygame.Surface(self.real_size).convert()
+        self.bgsurface = pygame.Surface(self.window_size).convert()
         self.bgsurface.fill((0, 0, 0))
 
     def run(self):
@@ -273,8 +239,63 @@ class World(SettingsParser):
                     done = True
             self.current_level.update(letters)
             self.draw()
-            self.clock.tick(30)
-            
+            self.clock.tick()
+
+    def center_point(self, p, rect):
+        x = ((self.virtual_size[0] - rect[0]) / 2 + p[0]) * \
+            self.disp_zoom + self.screen_offset[0]
+        y = (self.virtual_size[1] - p[1]) * self.disp_zoom + self.screen_offset[1]
+        return int(x), int(y)
+
+    def normal_point(self, p, rect):
+        x = p[0] * self.disp_zoom + self.screen_offset[0]
+        y = self.real_size[1] - p[1] * self.disp_zoom - rect[1] + self.screen_offset[1]
+        return int(x), int(y)
+
+    def real_point(self, x, y):
+        x = self.screen_offset[0] + x * self.disp_zoom
+        y = self.screen_offset[1] + y * self.disp_zoom
+        return [x, y]
+
+    def draw_stickfigure_line(self, p1, p2, body_rect, color=(255, 255, 255)):
+        p1 = self.center_point(p1, body_rect)
+        p2 = self.center_point(p2, body_rect)
+        line_width = 3 * self.disp_zoom
+        cairogame.draw_line(color, p1, p2, line_width)
+
+    def draw_stickfigure_circle(self, pos, radius, body_rect, color=(255, 255, 255)):
+        pos = self.center_point(pos, body_rect)
+        radius = int(radius * self.disp_zoom)
+        cairogame.draw_circle(color, pos, radius)
+
+    def finish_stickfigure_draw(self):
+        cairogame.finish_draw()
+
+    def draw_wall(self, start, end, color=(255, 255, 255)):
+        start = self.real_point(start, 0)
+        end = self.real_point(end, 0)
+        end[1] += self.real_size[1]
+        size = [end[i] - start[i] for i in range(2)]
+        rect = pygame.Rect(start, size)
+        pygame.draw.rect(self.screen, color, rect)
+
+    def create_text(self, text, text_height=75, color=(255, 255, 255)):
+        surf = self.std_font.render(text, True, color)
+        size = surf.get_size()
+        text_height *= self.disp_zoom
+        ratio = size[1] / text_height
+        size = int(size[0] / ratio), int(text_height)
+        surf = pygame.transform.smoothscale(surf, size)
+        return surf
+
+    def blit(self, surf, pos):
+        self.screen.blit(surf, self.normal_point(pos, surf.get_size()))
+
+    def fill_borders(self, color=(255, 255, 255)):
+        for x in self.screen_bars:
+            if x is not None:
+                x.fill(color)
+
     def draw(self):
         self.screen.blit(self.bgsurface, (0, 0))
         self.current_level.draw()
@@ -282,12 +303,12 @@ class World(SettingsParser):
         if self.screen_bars[0] is not None:
             self.screen.blit(self.screen_bars[0], (0, 0))
             self.screen.blit(self.screen_bars[0],
-                             (self.real_size[0] -
+                             (self.window_size[0] -
                               self.screen_bars[0].get_size()[0], 0))
         if self.screen_bars[1] is not None:
             self.screen.blit(self.screen_bars[1], (0, 0))
             self.screen.blit(self.screen_bars[1],
-                             (0, self.real_size[1] -
+                             (0, self.window_size[1] -
                               self.screen_bars[1].get_size()[1]))
 
         pygame.display.flip()

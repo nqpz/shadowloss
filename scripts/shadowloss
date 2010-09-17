@@ -25,18 +25,21 @@
 ##[ Start date  ]## 2010 September 13
 
 import sys
+import os.path
 from optparse import OptionParser
 
 try:
     import shadowloss.various
-    INSTALLED = True
+    # If this script has been called by shadowloss-local, it is
+    # already set. Only set it if it is not set.
+    if 'INSTALLED' not in dir():
+        INSTALLED = True
 except ImportError:
     # shadowloss is not installed, trying an ugly fix. Considering that
     # this executable is in the scripts/ directory, appending the
     # directory one level up to sys.path should make importing possible.
-    import os.path
     basedir = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
-    sys.path.append(basedir)
+    sys.path.insert(0, basedir)
     INSTALLED = False
 
 import shadowloss.various as various

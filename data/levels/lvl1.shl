@@ -23,4 +23,8 @@
 
 length = 1000
 start speed = 2
-letters = 30:A, 120:B, 210:C, 340:D, 500:E, 550:F, 660:G, 800:H, 910:I
+end speed = 0.5
+default speed decrease = 0.3
+default speed increase = 0.4
+letters = 30:A:1.0, 120:B, 210:C, 340:D, 500:E, 550:F, 660:G, 800:H, 910:I
+stickfigure = zorna

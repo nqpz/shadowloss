@@ -45,8 +45,8 @@ class StickFigure(object):
         class Container: pass
         self.info = Container()
 
-    def add_line(self, start, end, angle, length):
-        self.objects.append((LINE, start, end, angle, length))
+    def add_line(self, start, end, angle, length, hidden=False):
+        self.objects.append((LINE, start, end, angle, length, not hidden))
 
     def add_circle(self, pos, radius):
         self.objects.append((CIRCLE, pos, radius))
@@ -70,8 +70,10 @@ class StickFigure(object):
                     continue
                 elif start is None:
                     angle = (angle + 180) % 360
-                    start = end
-                    end = None
+                    start, end = end, None
+                elif start not in points and end in points:
+                    angle = (angle + 180) % 360
+                    start, end = end, start
 
                 if start not in points:
                     points[start] = (0, 0)
@@ -80,7 +82,7 @@ class StickFigure(object):
                        points[start][1] + length * math.sin(angle))
                 if end is not None and end not in objs:
                     points[end] = pos
-                objs.append((LINE, points[start], pos))
+                objs.append((LINE, points[start], pos, x[5]))
             elif x[0] == CIRCLE:
                 pos = x[1]
                 radius = x[2](step)
@@ -104,7 +106,8 @@ class StickFigure(object):
         for x in objs:
             if x[0] == LINE:
                 new_objs.append((x[0], [x[1][i] - smallest[i] + offset[i] for i in range(2)],
-                                 [x[2][i] - smallest[i] + offset[i] for i in range(2)]))
+                                 [x[2][i] - smallest[i] + offset[i]
+                                  for i in range(2)], x[3]))
             elif x[0] == CIRCLE:
                 new_objs.append((x[0], [x[1][i] - smallest[i] + offset[i] for i in range(2)],
                                  x[2]))
@@ -121,13 +124,14 @@ class StickFigure(object):
         size = (max(xs) - min(xs), max(ys) - min(ys))
         return objs, size
 
-    def draw(self, step=0, speed=1):
+    def draw(self, step=0, speed=1, color=None):
         objs, size = self.generate_body(step, speed)
         for x in objs:
-            if x[0] == LINE:
-                self.parent.draw_line(x[1], x[2], size)
+            if x[0] == LINE and x[3]:
+                self.parent.draw_stickfigure_line(x[1], x[2], size, color)
             elif x[0] == CIRCLE:
-                self.parent.draw_circle(x[1], x[2], size)
+                self.parent.draw_stickfigure_circle(x[1], x[2], size, color)
+        self.parent.finish_stickfigure_draw()
 
     def start(self):
         pass
@@ -136,20 +140,43 @@ class StickFigure(object):
         pass
 
 class LinearChange(object):
-    def __init__(self, *intervals):
+    def __init__(self, *intervals, **kwds):
+        measure = kwds.get('measure') or 'step'
+        if measure == 'speed':
+            self.get_measure = lambda info: info.speed
+        else:
+            self.get_measure = lambda info: info.step
+
+        intervals = list([list(x) for x in intervals])
+        for x in intervals:
+            if len(x) == 3:
+                x.append(x[2])
         self.intervals = intervals
 
     def __call__(self, info):
+        mea = self.get_measure(info)
         for x in self.intervals:
-            if info.step >= x[0] and info.step < x[1]:
-                return ((info.step - x[0]) / float(x[1] - x[0])) * (x[3] - x[2]) + x[2]
+            a = min(x[:2])
+            b = max(x[:2])
+            if a != x[0]:
+                d, c = x[2], x[3]
+            else:
+                c, d = x[2], x[3]
+            if a == -1:
+                if b <= mea:
+                    return x[2]
+            elif ((a > 0 and mea >= a) or a == 0) and mea < b:
+                return ((mea - a) / float(b - a)) * (d - c) + c
 
-if __name__ == '__main__':
+        # Else
+        return 0
+
+def show_test(func):
+    """Shows a simple test run of the stick figure"""
+
     import sys
     import pygame
     import datetime
-
-    print 'This is just an example, not a game.'
 
     SIZE = (400, 300)
     pygame.display.init()
@@ -158,54 +185,70 @@ if __name__ == '__main__':
     bgsurface = pygame.Surface(SIZE).convert()
     bgsurface.fill((0, 0, 0))
 
+    ZOOM = 2
+    
     class SimpleSystem(object):
         def error(self, message, done=False):
             print >> sys.stderr, message
 
         def normalize_point(self, p, rect):
-            x = SIZE[0] / 2 + p[0] - rect[0] / 2
-            y = SIZE[1] - p[1]
+            x = SIZE[0] / 2 + p[0] * ZOOM - rect[0] * ZOOM / 2
+            y = SIZE[1] - p[1] * ZOOM
             return int(x), int(y)
  
-        def draw_line(self, p1, p2, body_rect):
+        def draw_stickfigure_line(self, p1, p2, body_rect,
+                                  color=None):
+            if not color: color = (255, 255, 255)
             p1 = self.normalize_point(p1, body_rect)
             p2 = self.normalize_point(p2, body_rect)
-            pygame.draw.line(SCREEN, (255, 255, 255), p1, p2, 3)
+            pygame.draw.line(SCREEN, color, p1, p2, 3)
 
-        def draw_circle(self, pos, radius, body_rect):
+        def draw_stickfigure_circle(self, pos, radius, body_rect,
+                                    color=None):
+            if not color: color = (255, 255, 255)
             pos = self.normalize_point(pos, body_rect)
-            pygame.draw.circle(SCREEN, (255, 255, 255), pos, int(radius))
+            pygame.draw.circle(SCREEN, color, pos,
+                               int(radius * ZOOM))
 
-    stickman = StickFigure(SimpleSystem(), None, LinearChange((0, 250, 0, 25), (250, 500, 25, 5), (500, 750, 5, 10), (750, 1000, 10, 0)))
-    # Create its limbs
-    stickman.add_line(None, 'A', LinearChange((0, 500, 70, 110), (500, 1000, 110, 70)), lambda info: 40)
-    stickman.add_line(None, 'A', LinearChange((0, 500, 110, 70), (500, 1000, 70, 110)), lambda info: 40)
-    stickman.add_line('A', 'B', lambda info: 90, lambda info: 30)
-    stickman.add_line('B', None, LinearChange((0, 500, -140, -40), (500, 1000, -40, -140)), lambda info: 25)
-    stickman.add_line('B', None, LinearChange((0, 500, -40, -140), (500, 1000, -140, -40)), lambda info: 25)
-    stickman.add_line('B', 'C', lambda info: 50 * info.speed, lambda info: 20)
-    stickman.add_circle('C', lambda info: 13)
+        def finish_stickfigure_draw(self):
+            # This function may be usable by drawing systems where
+            # everything must be drawn at once.
+            pass
 
-    SPEED = 0.5
+    stickman = func(SimpleSystem())
+    
+    SPEED = 1.0
     
     clock = pygame.time.Clock()
     time = 0
-    then = datetime.datetime.now()
-    stamp = then
+    orig_time = datetime.datetime.now()
+    prev_time = orig_time
     while not pygame.QUIT in [e.type for e in pygame.event.get()]:
         SCREEN.blit(bgsurface, (0,0))
         stickman.draw(time, SPEED)
         pygame.display.flip()
 
         now = datetime.datetime.now()
-        diff = (now - then) - (stamp - then)
-        time += (diff.microseconds / 1000) * SPEED
-        stamp = now
+        increase = ((now - orig_time) - (prev_time - orig_time)).microseconds / 1000
+        time += increase * SPEED
+        prev_time = now
         if time >= 999:
             time = time % 1000
 
-            SPEED += 0.1
-            if SPEED > 2:
-                SPEED = 0.5
-
         clock.tick(30)
+
+if __name__ == '__main__':
+    def create(parent):
+        stickman = StickFigure(parent, None, LinearChange((0, 250, 0, 25), (250, 500, 25, 5), (500, 750, 5, 10), (750, 1000, 10, 0)))
+        # Create its limbs
+        stickman.add_line(None, 'A', LinearChange((0, 500, 70, 110), (500, 1000, 110, 70)), lambda info: 40)
+        stickman.add_line(None, 'A', LinearChange((0, 500, 110, 70), (500, 1000, 70, 110)), lambda info: 40)
+        stickman.add_line('A', 'B', lambda info: 90, lambda info: 30)
+        stickman.add_line('B', None, LinearChange((0, 500, -140, -40), (500, 1000, -40, -140)), lambda info: 25)
+        stickman.add_line('B', None, LinearChange((0, 500, -40, -140), (500, 1000, -140, -40)), lambda info: 25)
+        stickman.add_line('B', 'C', lambda info: 50 * info.speed, lambda info: 20)
+        stickman.add_circle('C', lambda info: 13)
+        return stickman
+
+    print 'This is just an example, not a game.'
+    show_test(create)
