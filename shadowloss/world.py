@@ -111,6 +111,7 @@ class World(SettingsParser):
         self.create_screen()
 
         pygame.display.set_caption(ginfo.program_name)
+        pygame.mouse.set_visible(False)
 
         self.std_font = pygame.font.Font(
             os.path.join(self.data_dir, 'fonts',
@@ -141,15 +142,7 @@ class World(SettingsParser):
         self.screen_bars = [None, None]
         self.screen_offset = [0, 0] # Might get changed if bars need
                                     # to be added
-        if self.use_fullscreen:
-            flags = FULLSCREEN
-            if self.use_hwaccel:
-                flags = flags | HWSURFACE
-            if self.use_doublebuf:
-                flags = flags | DOUBLEBUF
-            self.window_size = self.virtual_size
-            self.disp_zoom = 1
-        elif self.use_fakefullscreen or self.disp_size is not None:
+        if self.use_fakefullscreen or self.disp_size is not None:
             # Get dimensions (screen size if use_fakefullscreen,
             # user-specified size otherwise)
             if self.use_fakefullscreen or (self.disp_size is not None and
@@ -192,9 +185,16 @@ class World(SettingsParser):
                 flags = NOFRAME
             if self.use_doublebuf:
                 if flags is not 0:
-                    flags = flags | DOUBLEBUF
+                    flags |= DOUBLEBUF
                 else:
                     flags = DOUBLEBUF
+            if self.use_fullscreen:
+                if flags is not 0:
+                    flags |= FULLSCREEN
+                else:
+                    flags = FULLSCREEN
+                if self.use_hwaccel:
+                    flags |= HWSURFACE
         else:
             # Check if a zoom level has been given
             if self.disp_zoom != 1:
@@ -209,6 +209,13 @@ class World(SettingsParser):
                     flags = flags | DOUBLEBUF
                 else:
                     flags = DOUBLEBUF
+            if self.use_fullscreen:
+                if flags is not 0:
+                    flags = flags | FULLSCREEN
+                else:
+                    flags = FULLSCREEN
+                if self.use_hwaccel:
+                    flags |= HWSURFACE
 
         self.real_size = [self.window_size[i] - self.screen_offset[i]
                           * 2 for i in range(2)]
@@ -248,7 +255,7 @@ class World(SettingsParser):
         return int(x), int(y)
 
     def normal_point(self, p, rect):
-        x = p[0] * self.disp_zoom + self.screen_offset[0]
+        x = (p[0] * self.disp_zoom) - rect[0] / 2 + self.screen_offset[0]
         y = self.real_size[1] - p[1] * self.disp_zoom - rect[1] + self.screen_offset[1]
         return int(x), int(y)
 
@@ -279,7 +286,8 @@ class World(SettingsParser):
         rect = pygame.Rect(start, size)
         pygame.draw.rect(self.screen, color, rect)
 
-    def create_text(self, text, text_height=75, color=(255, 255, 255)):
+    def create_text(self, text, text_height=75, color=(255, 255,
+    255)):
         surf = self.std_font.render(text, True, color)
         size = surf.get_size()
         text_height *= self.disp_zoom

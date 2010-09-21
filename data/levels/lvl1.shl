@@ -22,9 +22,15 @@
 ##[ Start date  ]## 2010 September 14
 
 length = 1000
-start speed = 2
-end speed = 0.5
+stickfigure = zorna
+start speed = 1.7
+end speed = 0.2
 default speed decrease = 0.3
 default speed increase = 0.4
-letters = 30:A:1.0, 120:B, 210:C, 340:D, 500:E, 550:F, 660:G, 800:H, 910:I
-stickfigure = zorna
+speed increase per second = 0
+
+default letter changing speed = 0.5
+letters = 30:A\1.0, 120:B, 210:C:cc:S//0.2:cs\0.3\0.7, \
+        340:D, 500:E, 550:F, 660:G, 800:H, 910:I
+
+numbers = 400:3, 700:3
