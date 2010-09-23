@@ -116,7 +116,7 @@ class Level(object):
                     info.letter = string
                     info.temp_text = ''
                 elif typ == 'number':
-                    info.number = int(string)
+                    info.number = float(string)
                 info.settings = settings
                 info.surface = surf
                 info.width = surf.get_size()[0]
@@ -268,11 +268,12 @@ class Level(object):
 
         # Check for end of any current continous penalty speed increase
         if self.current_temp_speed_time is not None:
-            if (now - self.current_temp_speed_wait).microseconds \
+            if (now - self.current_temp_speed_time).microseconds \
                     / 1000.0 > self.current_temp_speed_duration:
                 self.speed -= self.current_temp_speed_increase
                 self.current_temp_speed_increase = 0
                 self.current_temp_speed_duration = 0
+                self.current_temp_speed_time = None
 
         ok = False
         for x in self.letters:
