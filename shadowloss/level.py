@@ -25,6 +25,7 @@
 ##[ Start date  ]## 2010 September 13
 
 import datetime
+import re
 import shadowloss.various as various
 from shadowloss.builtinstickfigures import stickfigures as builtinstickfigures
 try:
@@ -32,68 +33,167 @@ try:
 except ImportError:
     from shadowloss.external.qvikconfig import parse as config_parse
 
-PLAYING = 0
-WON = 1
-LOST = 2
+PLAYING = 1
+WON = 2
+LOST = 3
+
+class ObjectContainer(various.Container):
+    def get_current_part(self):
+        return self.parts[self.current_part]
+
+    def has_pos(self, test_pos):
+        part = self.get_current_part()
+        return self.pos - part.width / 2 <= test_pos <= self.pos + part.width / 2
+
+class PartContainer(various.Container):
+    pass
+
+class SettingsContainer(various.Container):
+    pass
 
 class Level(object):
+    def _extract_text_settings(self, sets):
+        """
+        Extracts settings from text settings in the shadowloss
+        syntax
+        """
+        info = {}
+        sets = [x.split('=') for x in sets.rstrip(']').split(';')]
+        for x in sets:
+            info[x[0]] = float(info[x[1]])
+
+        return info
+
+    def create_objects(self, lst, typ=None):
+        """
+        Create usable objects from a list of letters or numbers in
+        shadowloss syntax.
+        """
+        objects = []
+        for x in lst:
+            contents = x.split('[')
+            if len(contents) > 1:
+                global_settings = self._extract_text_settings(contents[1])
+            else:
+                global_settings = {}
+
+            subcontents = contents[0].split(':')
+            parts = []
+            for y in subcontents[1:]:
+                contents = y.split('(')
+                if len(contents) > 1:
+                    local_settings = self._extract_text_settings(contents[1])
+                else:
+                    local_settings = {}
+
+                t_get = lambda name, default: \
+                    return local_settings[name] or \
+                    global_settings[name] or default
+
+                settings = SettingsContainer()
+                settings.duration = t_get('dur', typ == 'letter' and
+                                          self.defaults.letter_duration
+                                          or self.defaults.number_duration)
+                if typ == 'letter':
+                    settings.speed_decrease = t_get(
+                        'dec', self.defaults.speed_decrease)
+                elif typ == 'number':
+                    settings.speed_increase = t_get(
+                        'inc', self.defaults.temp_speed_increase)
+
+                string = contents[0]
+                obj_height = typ == 'letter' and self.letter_height or self.number_height
+                surf = self.parent.create_text(string, obj_height)
+
+                info = PartContainer()
+                if typ == 'letter':
+                    info.letter = string
+                    info.temp_text = ''
+                elif typ == 'number':
+                    info.number = int(string)
+                info.settings = settings
+                info.surface = surf
+                info.width = surf.get_size()[0]
+                info.font_height = obj_height
+
+                parts.append(info)
+
+            pos = subcontents[0]
+
+            info = ObjectContainer()
+            info.type = typ
+            info.pos = pos
+            info.parts = parts
+            info.current_part = 0
+            info.current_time = 0
+
+            objects.append(info)
+
+        return objects
+
     def __init__(self, parent, path):
         self.parent = parent
         self.path = path
 
         data = config_parse(path)
-        nletters = []
-        for x in data['letters']:
-            spl = x.split('\\')
-            try:
-                default_decrease = float(spl[1])
-            except IndexError:
-                default_decrease = None
-            try:
-                default_letter_speed = int(float(spl[2]) * 1000)
-            except IndexError:
-                default_letter_speed = None
-            spl = spl[0].split(':')
-            pos = float(spl[0])
-            parts = []
-            for y in spl[1:]:
-                bspl = y.split('/')
-                letter = bspl[0]
-                try:
-                    decrease = float(bspl[1])
-                except Exception:
-                    decrease = default_decrease
-                try:
-                    letter_speed = int(float(bspl[2]) * 1000)
-                except Exception:
-                    letter_speed = default_letter_speed
-                surf = self.parent.create_text(letter, 75)
-                parts.append([letter, surf, surf.get_size()[0],
-                              decrease, letter_speed, ''])
-            nletters.append([pos, parts, 0, 0])
-        nnumbers = []
-        for x in data['numbers']:
-            spl = x.split(':')
-            pos = float(spl[0])
-            number = spl[1]
-            surf = self.parent.create_text(number, 40)
-            nnumbers.append([pos, int(number), surf, surf.get_size()[0]])
 
-        self.letters = nletters
-        self.numbers = nnumbers
+        # Starting speed of stickfigure
         self.start_speed = float(data.get('start speed') or 1.0)
-        self.end_speed = float(data.get('end speed') or 0.0)
+
+        # When the stickman reaches the stop speed without hitting the
+        # wall, he (or, alternatively, the human player controlling
+        # him/her), has won.
+        self.stop_speed = float(data.get('stop speed') or 0.0)
+
+        # Starting position of stickfigure
         self.start_pos = float(data.get('start position') or 0.0)
-        if self.start_pos is None:
-            self.start_pos = 0
+
+        # Length of level
         self.length = data['length']
-        self.speed_increase = float(data.get('default speed increase') or 0.5)
-        self.temp_speed_increase = float(data.get('default temporary speed increase') or 1.0)
-        self.speed_increase_per_second = float(data.get('speed increase per second') or 0)
-        self.speed_decrease = float(data.get('default speed decrease') or 0.5)
-        self.letter_speed = int(float(data.get('default letter changing speed') or 0.5) * 1000)
-        self.stickfigure = builtinstickfigures[data.get('stickfigure')
-                                               or 'bob'].create(self.parent)
+
+        # Speed increase when pressing a wrong letter
+        self.speed_increase = float(
+            data.get('speed increase') or 0.5)
+
+        # Speed increase per second
+        self.speed_increase_per_second = float(
+            data.get('speed increase per second') or 0.0)
+
+        # Stickfigure to be used
+        self.stickfigure = builtinstickfigures[
+            data.get('stickfigure') or 'bob'].create(self.parent)
+
+        # Font heights
+        self.font_height = int(data.get('font height') or 75)
+        self.letter_height = int(data.get('letter height') or font_height)
+        self.number_height = int(data.get('number height') or font_height)
+        
+        # Default values
+        self.defaults = various.Container()
+
+        ## Temporary speed increase during number penalties
+        self.defaults.temp_speed_increase = float(
+            data.get('default temporary speed increase') or 1.0)
+
+        ## Speed decrease when pressing a correct letter
+        self.default_speed_decrease = float(
+            data.get('default speed decrease') or 0.5)
+
+        ## The speed at which subobjects change
+        default_obj_dur = float(
+            data.get('default object duration') or 0.5)
+        self.defaults.letter_duration = int(
+            float(data.get('default letter duration')
+                  or default_obj_dur) * 1000)
+        self.defaults.number_duration = int(
+            float(data.get('default number duration')
+                  or default_obj_dur) * 1000)
+
+        # Objects
+        self.base_letters = self.create_objects(data.get('letters'), 'letter')
+        self.base_numbers = self.create_objects(data.get('numbers'), 'number')
+
+        # Prepare
         self.start()
 
     def start(self):
@@ -101,21 +201,29 @@ class Level(object):
         self.pos = self.start_pos
         self.time = 0
         self.temp_speed_still = 0
+        self.current_temp_speed_increase = 0
         self.orig_time = datetime.datetime.now()
         self.prev_time = self.orig_time
-        for x in self.letters:
-            x[3] = 0
+        
+        for x in (self.base_letters, self.base_numbers):
+            for y in x:
+                y.current_time = 0
+                for z in y.parts:
+                    if z.type = 'letter':
+                        z.temp_text = ''
+        self.letters, self.numbers = self.base_letters[:], self.base_numbers[:]
+
         self.body_color = (255, 255, 255)
         self.parent.fill_borders(self.body_color)
+
         self.status = PLAYING
 
     def color_foreground(self):
         self.parent.fill_borders(self.body_color)
-        for x in self.letters:
-            for y in x[1]:
-                y[1] = self.parent.create_text(y[0], 75, self.body_color)
-        for x in self.numbers:
-            x[2] = self.parent.create_text(str(x[1]), 40, self.body_color)
+        for x in (self.letters, self.numbers):
+            for y in x:
+                for z in y.parts:
+                    z.surface = self.parent.create_text(z.text, y.font_height, self.body_color)
 
     def lose(self):
         self.status = LOST
@@ -132,65 +240,71 @@ class Level(object):
             return
 
         now = datetime.datetime.now()
-        increase = ((now - self.orig_time) - (self.prev_time - self.orig_time)).microseconds / 1000
-        self.time += increase * self.speed
+        time_increase = ((now - self.orig_time) - (self.prev_time - self.orig_time)).microseconds / 1000
+        self.time += time_increase * self.speed
         self.prev_time = now
-        if self.time >= 999:
-            self.time = self.time % 1000
-            self.speed += self.speed_increase_per_second
-            if self.temp_speed_still > 0:
-                self.temp_speed_still -= 1
-                if self.temp_speed_still == 0:
-                    self.speed -= self.temp_speed_increase
+        if self.time > 999:
+            self.time %= 1000
 
+        if self.current_temp_speed_wait > 0:
+            self.current_temp_speed_wait -= time_increase / 1000.0
+            if self.current_temp_speed_wait <= 0:
+                self.speed -= self.current_temp_speed_increase
+                self.current_temp_speed_increase = 0
+
+        self.speed += self.speed_increase_per_second * time_increase / 1000.0
         self.pos += self.speed * (increase / 10.0)
-        if self.pos >= self.length:
-            self.lose()
-
-        ok = False
         for x in self.letters:
-            part = x[1][x[2]]
-            if x[0] - part[2] / 2 <= self.pos <= x[0] + part[2] / 2:
-                test = part[0].lower()
+            part = x.get_current_part()
+            if x.has_pos(self.pos)
+                test = part.string.lower()
                 for y in letters:
-                    if test.startswith(part[5] + y):
-                        part[5] += y
-                        if part[5] == test:
+                    if test.startswith(part.temp_text + y):
+                        part.temp_text += y
+                        if part.temp_text == test:
+                            part.temp_text = ''
                             self.letters.remove(x)
-                            self.speed -= part[3] or self.speed_decrease
+                            self.speed -= part.settings.speed_decrease
                     else:
                         self.speed += self.speed_increase
-                        part[5] = ''
+                        part.temp_text = ''
                 ok = True
                 break
 
-            x[3] += increase
-            if x[3] >= (part[4] or self.letter_speed):
-                x[3] = x[3] % (part[4] or self.letter_speed)
-                part[5] = ''
-                x[2] = (x[2] + 1) % len(x[1])
-                
+            x.current_time += time_increase
+            if x.current_time >= part.settings.duration:
+                x.current_time %= part.settings.duration
+                part.temp_text = ''
+                x.current_part = (x.current_part + 1) % len(x.parts)
+
         if not ok:
             for x in letters:
                 self.speed += self.speed_increase
 
         for x in self.numbers:
-            if x[0] - x[3] / 2 <= self.pos <= x[0] + x[3] / 2:
+            part = x.get_current_part()
+            if x.has_pos(self.pos):
                 self.numbers.remove(x)
-                self.temp_speed_still = x[1]
-                self.speed += self.temp_speed_increase
+                self.current_temp_speed_wait += part.number
+                this_speed_increase = part.settings.speed_increase
+                self.current_temp_speed_increase += this_speed_increase
+                self.speed += this_speed_increase
 
-        if self.speed <= self.end_speed:
+        if self.speed <= self.stop_speed:
             self.win()
 
     def draw(self):
-        for x in self.letters:
-            self.parent.blit(x[1][x[2]][1], (x[0] - self.pos +
-                                    self.parent.virtual_size[0] / 2, 0))
-        for x in self.numbers:
-            self.parent.blit(x[2], (x[0] - self.pos +
-                                   self.parent.virtual_size[0] / 2, 0))
+        # Draw objects
+        for x in (self.letters, self.numbers):
+            for y in x:
+                self.parent.blit(y.get_current_part().surface,
+                                 (x.pos - self.pos +
+                                  self.parent.virtual_size[0] / 2, 0))
+
+        # Draw stickfigure
         self.stickfigure.draw(self.time, self.speed, self.body_color)
+
+        # Draw start and end wall
         self.parent.draw_wall(-1, self.parent.virtual_size[0] / 2 -
                                self.pos, self.body_color)
         self.parent.draw_wall(self.length - self.pos + self.parent.virtual_size[0] /

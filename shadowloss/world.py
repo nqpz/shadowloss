@@ -124,7 +124,6 @@ class World(SettingsParser):
         self.levels = [self.create_level(x) for x in self.levels]
         self.set_current_level(0)
 
-
         self.clock = pygame.time.Clock()
         self.run()
 

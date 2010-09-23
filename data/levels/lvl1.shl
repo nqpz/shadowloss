@@ -24,13 +24,11 @@
 length = 1000
 stickfigure = zorna
 start speed = 1.7
-end speed = 0.2
-default speed decrease = 0.3
-default speed increase = 0.4
-speed increase per second = 0
+stop speed = 0.2
+speed increase per second = 0.1
 
-default letter changing speed = 0.5
-letters = 30:A\1.0, 120:B, 210:C:cc:S//0.2:cs\0.3\0.7, \
-        340:D, 500:E, 550:F, 660:G, 800:H, 910:I
+letters = 30:A[dec=1.0], 120:B, \
+          210:C:cc:S(dur=0.2):cs[dec=0.3;chg=0.7], \
+          340:D, 500:E, 550:F, 660:G, 800:H, 910:I
 
-numbers = 400:3, 700:3
+numbers = 400:3:2:5[dur=0.5,incdur=3], 700:3
