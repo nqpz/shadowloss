@@ -28,10 +28,10 @@ import os
 import pygame
 from pygame.locals import *
 from shadowloss.settingsparser import SettingsParser
+from shadowloss.level import Level
+import shadowloss.cairogame as cairogame
 import shadowloss.various as various
 import shadowloss.generalinformation as ginfo
-from shadowloss.level import Level
-import cairogame
 
 config_file_translations = {
     'verbose': 'term_verbose',
@@ -43,6 +43,8 @@ config_file_translations = {
     'border': 'use_border',
     'hwaccel': 'use_hwaccel',
     'doublebuf': 'use_doublebuf',
+    'max fps': 'max_fps',
+    'show debug': 'show_debug',
     'mute': 'mute'
 }
 
@@ -52,6 +54,7 @@ class World(SettingsParser):
     def __init__(self, **options):
         SettingsParser.__init__(self, config_file_translations,
                                 **options)
+        # Get values, or set them to default ones
         self.set_if_nil('error_function', various.usable_error)
         self.set_if_nil('data_dir', ginfo.global_data_dir)
         self.set_if_nil('term_verbose', True)
@@ -63,11 +66,14 @@ class World(SettingsParser):
         self.set_if_nil('use_border', True)
         self.set_if_nil('use_hwaccel', True)
         self.set_if_nil('use_doublebuf', True)
+        self.set_if_nil('max_fps', None)
+        self.set_if_nil('show_debug', False)
         self.set_if_nil('mute', False)
 
         self.levels = options.get('levels') or []
 
         if self.disp_size is not None:
+                    # Parse display size input
             try:
                 spl = self.disp_size.split('x')
                 self.disp_size = []
@@ -125,6 +131,10 @@ class World(SettingsParser):
         self.set_current_level(0)
 
         self.clock = pygame.time.Clock()
+        if self.max_fps is not None:
+            self.tick = lambda: self.clock.tick(self.max_fps)
+        else:
+            self.tick = self.clock.tick
         self.run()
 
     def end(self):
@@ -235,6 +245,9 @@ class World(SettingsParser):
     def run(self):
         done = False
         while not done:
+            if self.show_debug:
+                self.print_debug_information()
+
             letters = []
             for x in pygame.event.get():
                 if x.type == KEYDOWN:
@@ -245,20 +258,26 @@ class World(SettingsParser):
                     done = True
             self.current_level.update(letters)
             self.draw()
-            self.clock.tick()
+            self.tick()
+
+    def print_debug_information(self):
+        print 'FPS:', self.clock.get_fps()
 
     def center_point(self, p, rect):
+        """Center a point in the window based on a stickfigure frame"""
         x = ((self.virtual_size[0] - rect[0]) / 2 + p[0]) * \
             self.disp_zoom + self.screen_offset[0]
         y = (self.virtual_size[1] - p[1]) * self.disp_zoom + self.screen_offset[1]
         return int(x), int(y)
 
     def normal_point(self, p, rect):
+        """Modify point so that it's positioned the right place"""
         x = (p[0] * self.disp_zoom) - rect[0] / 2 + self.screen_offset[0]
         y = self.real_size[1] - p[1] * self.disp_zoom - rect[1] + self.screen_offset[1]
         return int(x), int(y)
 
     def real_point(self, x, y):
+        """Get a point's real value instead of its virtual value"""
         x = self.screen_offset[0] + x * self.disp_zoom
         y = self.screen_offset[1] + y * self.disp_zoom
         return [x, y]
@@ -305,6 +324,7 @@ class World(SettingsParser):
 
     def draw(self):
         self.screen.blit(self.bgsurface, (0, 0))
+        
         self.current_level.draw()
 
         if self.screen_bars[0] is not None:

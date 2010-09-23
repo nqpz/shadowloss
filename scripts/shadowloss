@@ -88,6 +88,9 @@ parser.add_option('-B', '--nodoublebuf', dest='use_doublebuf',
                   action='store_false',
                   help='do not attempt to use double buffering \
 (faster but perhaps uglier) ("doublebuf" in config file)')
+parser.add_option('-p', '--max-fps', dest='max_fps', type='float',
+                  help='limit the frames per second ("max fps" in config file)',
+                  metavar='NUMBER')
 parser.add_option('-m', '--mute', dest='mute',
                   action='store_true',
                   help='do not play sound and music (not recommended)')
@@ -95,6 +98,10 @@ parser.add_option('-q', '--quiet', dest='term_verbose',
                   action='store_false',
                   help='don\'t print error messages (named "verbose" in \
 your config file)')
+parser.add_option('-g', '--show-debug', dest='show_debug',
+                  action='store_true',
+                  help='show debugging information while playing \
+("show debug" in config file)')
 parser.add_option('-C', '--no-color-errors', dest='term_color_errors',
                   action='store_false',
                   help='do not attempt to print error messages in the \

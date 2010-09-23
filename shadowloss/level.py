@@ -39,9 +39,11 @@ LOST = 3
 
 class ObjectContainer(various.Container):
     def get_current_part(self):
+        """Get current part of this object"""
         return self.parts[self.current_part]
 
     def has_pos(self, test_pos):
+        """Check if a position is inside this object"""
         part = self.get_current_part()
         return self.pos - part.width / 2 <= test_pos <= self.pos + part.width / 2
 
@@ -75,12 +77,14 @@ class Level(object):
                 or self.number_height
         
         for x in lst:
+            # Split the entry into its parts and its global settings
             contents = x.split('[')
             if len(contents) > 1:
                 global_settings = self._extract_text_settings(contents[1])
             else:
                 global_settings = {}
 
+            # Parse the parts
             subcontents = contents[0].split(':')
             parts = []
             for y in subcontents[1:]:
@@ -90,6 +94,8 @@ class Level(object):
                 else:
                     local_settings = {}
 
+                # Use a hierarchy for settings:
+                # Local settings OR global settings OR default settings
                 t_get = lambda name, default: \
                     local_settings.get(name) or \
                     global_settings.get(name) or default
@@ -110,6 +116,7 @@ class Level(object):
                 string = contents[0]
                 surf = self.parent.create_text(string, obj_height)
 
+                # Save the information
                 info = PartContainer()
                 info.string = string
                 if typ == 'letter':
@@ -123,6 +130,7 @@ class Level(object):
 
                 parts.append(info)
 
+            # Basic info
             pos = float(subcontents[0])
 
             info = ObjectContainer()
@@ -205,6 +213,7 @@ class Level(object):
         self.start()
 
     def start(self):
+        """(Re)start the level"""
         now = datetime.datetime.now()
 
         self.speed = self.start_speed
@@ -216,7 +225,7 @@ class Level(object):
         self.current_temp_speed_time = None
 
         self.orig_time = now
-        self.prev_time = self.orig_time
+        self.prev_time = now
 
         # Reset certain values
         for x in (self.base_letters, self.base_numbers):
@@ -233,6 +242,7 @@ class Level(object):
         self.status = PLAYING
 
     def color_foreground(self):
+        """Colors all elements in one color (self.body_color)"""
         self.parent.fill_borders(self.body_color)
         for x in (self.letters, self.numbers):
             for y in x:
@@ -250,6 +260,7 @@ class Level(object):
         self.color_foreground()
 
     def update(self, letters=[]):
+        """Update the level"""
         if self.status != PLAYING:
             # You have either won or lost.
             return
@@ -275,6 +286,7 @@ class Level(object):
                 self.current_temp_speed_duration = 0
                 self.current_temp_speed_time = None
 
+        # Letter detection
         ok = False
         for x in self.letters:
             part = x.get_current_part()
@@ -293,10 +305,12 @@ class Level(object):
                 ok = True
                 break
 
+        # Speed increases when pressing keys in empty areas
         if not ok:
             for x in letters:
                 self.speed += self.speed_increase
 
+        # Number detection
         for x in self.numbers:
             part = x.get_current_part()
             if x.has_pos(self.pos):
@@ -307,9 +321,13 @@ class Level(object):
                 self.current_temp_speed_increase += this_speed_increase
                 self.speed += this_speed_increase
 
+        # See if objects with more than one part needs changing into
+        # the next parts
         for x in (self.letters, self.numbers):
             for y in x:
-                current_duration = (now - y.current_time).microseconds / 1000
+                if len(y.parts) == 1:
+                    continue
+                current_duration = (now - y.current_time).microseconds / 1000.0
                 part = y.get_current_part()
                 if current_duration >= part.settings.duration:
                     y.current_time = now
@@ -317,8 +335,10 @@ class Level(object):
                     if y.type == 'letter':
                         part.temp_text = ''
 
+        # Win if you have reached the given stop speed
         if self.speed <= self.stop_speed:
             self.win()
+        # ..or lose if you have crashed into the wall.
         elif self.pos >= self.length:
             self.lose()
 
