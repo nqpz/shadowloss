@@ -212,10 +212,13 @@ class Level(object):
         self.time = 0
         self.temp_speed_still = 0
         self.current_temp_speed_increase = 0
-        self.current_temp_speed_wait = 0
+        self.current_temp_speed_duration = 0
+        self.current_temp_speed_time = None
+
         self.orig_time = now
         self.prev_time = self.orig_time
-        
+
+        # Reset certain values
         for x in (self.base_letters, self.base_numbers):
             for y in x:
                 y.current_time = now
@@ -248,23 +251,28 @@ class Level(object):
 
     def update(self, letters=[]):
         if self.status != PLAYING:
+            # You have either won or lost.
             return
 
+        # Time
         now = datetime.datetime.now()
-        time_increase = (now - self.prev_time).microseconds / 1000
+        time_increase = (now - self.prev_time).microseconds / 1000.0
         self.time += time_increase * self.speed
         self.prev_time = now
         if self.time > 999:
             self.time %= 1000
 
-        if self.current_temp_speed_wait > 0:
-            self.current_temp_speed_wait -= time_increase / 1000.0
-            if self.current_temp_speed_wait <= 0:
-                self.speed -= self.current_temp_speed_increase
-                self.current_temp_speed_increase = 0
-
+        # Movement
         self.speed += self.speed_increase_per_second * time_increase / 1000.0
         self.pos += self.speed * (time_increase / 10.0)
+
+        # Check for end of any current continous penalty speed increase
+        if self.current_temp_speed_time is not None:
+            if (now - self.current_temp_speed_wait).microseconds \
+                    / 1000.0 > self.current_temp_speed_duration:
+                self.speed -= self.current_temp_speed_increase
+                self.current_temp_speed_increase = 0
+                self.current_temp_speed_duration = 0
 
         ok = False
         for x in self.letters:
@@ -292,7 +300,8 @@ class Level(object):
             part = x.get_current_part()
             if x.has_pos(self.pos):
                 self.numbers.remove(x)
-                self.current_temp_speed_wait += part.number
+                self.current_temp_speed_time = now
+                self.current_temp_speed_duration += part.number * 1000
                 this_speed_increase = part.settings.speed_increase
                 self.current_temp_speed_increase += this_speed_increase
                 self.speed += this_speed_increase
