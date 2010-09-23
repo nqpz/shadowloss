@@ -58,9 +58,9 @@ class Level(object):
         syntax
         """
         info = {}
-        sets = [x.split('=') for x in sets.rstrip(']').split(';')]
+        sets = [x.split('=') for x in sets.rstrip(')]').split(';')]
         for x in sets:
-            info[x[0]] = float(info[x[1]])
+            info[x[0]] = float(x[1])
 
         return info
 
@@ -70,6 +70,10 @@ class Level(object):
         shadowloss syntax.
         """
         objects = []
+
+        obj_height = typ == 'letter' and self.letter_height \
+                or self.number_height
+        
         for x in lst:
             contents = x.split('[')
             if len(contents) > 1:
@@ -87,13 +91,15 @@ class Level(object):
                     local_settings = {}
 
                 t_get = lambda name, default: \
-                    return local_settings[name] or \
-                    global_settings[name] or default
+                    local_settings.get(name) or \
+                    global_settings.get(name) or default
 
                 settings = SettingsContainer()
-                settings.duration = t_get('dur', typ == 'letter' and
-                                          self.defaults.letter_duration
-                                          or self.defaults.number_duration)
+                settings.duration = int(
+                    t_get('dur', typ == 'letter' and
+                          self.defaults.letter_duration
+                          or self.defaults.number_duration) * 1000)
+
                 if typ == 'letter':
                     settings.speed_decrease = t_get(
                         'dec', self.defaults.speed_decrease)
@@ -102,10 +108,10 @@ class Level(object):
                         'inc', self.defaults.temp_speed_increase)
 
                 string = contents[0]
-                obj_height = typ == 'letter' and self.letter_height or self.number_height
                 surf = self.parent.create_text(string, obj_height)
 
                 info = PartContainer()
+                info.string = string
                 if typ == 'letter':
                     info.letter = string
                     info.temp_text = ''
@@ -114,19 +120,19 @@ class Level(object):
                 info.settings = settings
                 info.surface = surf
                 info.width = surf.get_size()[0]
-                info.font_height = obj_height
 
                 parts.append(info)
 
-            pos = subcontents[0]
+            pos = float(subcontents[0])
 
             info = ObjectContainer()
             info.type = typ
             info.pos = pos
             info.parts = parts
             info.current_part = 0
-            info.current_time = 0
-
+            info.current_time = None
+            info.font_height = obj_height
+            
             objects.append(info)
 
         return objects
@@ -164,9 +170,11 @@ class Level(object):
             data.get('stickfigure') or 'bob'].create(self.parent)
 
         # Font heights
-        self.font_height = int(data.get('font height') or 75)
-        self.letter_height = int(data.get('letter height') or font_height)
-        self.number_height = int(data.get('number height') or font_height)
+        font_height = data.get('font height')
+        self.letter_height = int(data.get('letter height') or
+                                 font_height or 75)
+        self.number_height = int(data.get('number height') or
+                                 font_height or 40)
         
         # Default values
         self.defaults = various.Container()
@@ -176,18 +184,18 @@ class Level(object):
             data.get('default temporary speed increase') or 1.0)
 
         ## Speed decrease when pressing a correct letter
-        self.default_speed_decrease = float(
+        self.defaults.speed_decrease = float(
             data.get('default speed decrease') or 0.5)
 
         ## The speed at which subobjects change
         default_obj_dur = float(
             data.get('default object duration') or 0.5)
-        self.defaults.letter_duration = int(
-            float(data.get('default letter duration')
-                  or default_obj_dur) * 1000)
-        self.defaults.number_duration = int(
-            float(data.get('default number duration')
-                  or default_obj_dur) * 1000)
+        self.defaults.letter_duration = float(
+            data.get('default letter duration')
+            or default_obj_dur)
+        self.defaults.number_duration = float(
+            data.get('default number duration')
+            or default_obj_dur)
 
         # Objects
         self.base_letters = self.create_objects(data.get('letters'), 'letter')
@@ -197,19 +205,22 @@ class Level(object):
         self.start()
 
     def start(self):
+        now = datetime.datetime.now()
+
         self.speed = self.start_speed
         self.pos = self.start_pos
         self.time = 0
         self.temp_speed_still = 0
         self.current_temp_speed_increase = 0
-        self.orig_time = datetime.datetime.now()
+        self.current_temp_speed_wait = 0
+        self.orig_time = now
         self.prev_time = self.orig_time
         
         for x in (self.base_letters, self.base_numbers):
             for y in x:
-                y.current_time = 0
+                y.current_time = now
                 for z in y.parts:
-                    if z.type = 'letter':
+                    if y.type == 'letter':
                         z.temp_text = ''
         self.letters, self.numbers = self.base_letters[:], self.base_numbers[:]
 
@@ -223,7 +234,7 @@ class Level(object):
         for x in (self.letters, self.numbers):
             for y in x:
                 for z in y.parts:
-                    z.surface = self.parent.create_text(z.text, y.font_height, self.body_color)
+                    z.surface = self.parent.create_text(z.string, y.font_height, self.body_color)
 
     def lose(self):
         self.status = LOST
@@ -240,7 +251,7 @@ class Level(object):
             return
 
         now = datetime.datetime.now()
-        time_increase = ((now - self.orig_time) - (self.prev_time - self.orig_time)).microseconds / 1000
+        time_increase = (now - self.prev_time).microseconds / 1000
         self.time += time_increase * self.speed
         self.prev_time = now
         if self.time > 999:
@@ -253,11 +264,13 @@ class Level(object):
                 self.current_temp_speed_increase = 0
 
         self.speed += self.speed_increase_per_second * time_increase / 1000.0
-        self.pos += self.speed * (increase / 10.0)
+        self.pos += self.speed * (time_increase / 10.0)
+
+        ok = False
         for x in self.letters:
             part = x.get_current_part()
-            if x.has_pos(self.pos)
-                test = part.string.lower()
+            if x.has_pos(self.pos):
+                test = part.letter.lower()
                 for y in letters:
                     if test.startswith(part.temp_text + y):
                         part.temp_text += y
@@ -270,12 +283,6 @@ class Level(object):
                         part.temp_text = ''
                 ok = True
                 break
-
-            x.current_time += time_increase
-            if x.current_time >= part.settings.duration:
-                x.current_time %= part.settings.duration
-                part.temp_text = ''
-                x.current_part = (x.current_part + 1) % len(x.parts)
 
         if not ok:
             for x in letters:
@@ -290,15 +297,27 @@ class Level(object):
                 self.current_temp_speed_increase += this_speed_increase
                 self.speed += this_speed_increase
 
+        for x in (self.letters, self.numbers):
+            for y in x:
+                current_duration = (now - y.current_time).microseconds / 1000
+                part = y.get_current_part()
+                if current_duration >= part.settings.duration:
+                    y.current_time = now
+                    y.current_part = (y.current_part + 1) % len(y.parts)
+                    if y.type == 'letter':
+                        part.temp_text = ''
+
         if self.speed <= self.stop_speed:
             self.win()
+        elif self.pos >= self.length:
+            self.lose()
 
     def draw(self):
         # Draw objects
         for x in (self.letters, self.numbers):
             for y in x:
                 self.parent.blit(y.get_current_part().surface,
-                                 (x.pos - self.pos +
+                                 (y.pos - self.pos +
                                   self.parent.virtual_size[0] / 2, 0))
 
         # Draw stickfigure

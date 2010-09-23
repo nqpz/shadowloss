@@ -28,7 +28,7 @@ stop speed = 0.2
 speed increase per second = 0.1
 
 letters = 30:A[dec=1.0], 120:B, \
-          210:C:cc:S(dur=0.2):cs[dec=0.3;chg=0.7], \
+          210:C:cc:S(dur=0.2):cs[dec=0.3;dur=0.7], \
           340:D, 500:E, 550:F, 660:G, 800:H, 910:I
 
-numbers = 400:3:2:5[dur=0.5,incdur=3], 700:3
+numbers = 400:1:2:5[dur=0.7;incdur=3],,
