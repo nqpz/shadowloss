@@ -103,6 +103,9 @@ class StickFigure(object):
                     if x[1][i] < smallest[i]:
                         smallest[i] = x[1][i]
         new_objs = []
+        for x in points.keys():
+            points[x] = [points[x][i] - smallest[i] + offset[i] for i
+                    in range(2)]
         for x in objs:
             if x[0] == LINE:
                 new_objs.append((x[0], [x[1][i] - smallest[i] + offset[i] for i in range(2)],
@@ -122,16 +125,17 @@ class StickFigure(object):
                 ys.append(x[2][1])
 
         size = (max(xs) - min(xs), max(ys) - min(ys))
-        return objs, size
+        return objs, points, size
 
     def draw(self, step=0, speed=1, color=None):
-        objs, size = self.generate_body(step, speed)
+        objs, points, size = self.generate_body(step, speed)
         for x in objs:
             if x[0] == LINE and x[3]:
                 self.parent.draw_stickfigure_line(x[1], x[2], size, color)
             elif x[0] == CIRCLE:
                 self.parent.draw_stickfigure_circle(x[1], x[2], size, color)
         self.parent.finish_stickfigure_draw()
+        return objs, points, size
 
     def start(self):
         pass
@@ -225,7 +229,8 @@ def show_test(func):
     prev_time = orig_time
     while not pygame.QUIT in [e.type for e in pygame.event.get()]:
         SCREEN.blit(bgsurface, (0,0))
-        stickman.draw(time, SPEED)
+        objs, points, size = stickman.draw(time, SPEED)
+        print points
         pygame.display.flip()
 
         now = datetime.datetime.now()

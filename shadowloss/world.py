@@ -27,11 +27,16 @@
 import os
 import pygame
 from pygame.locals import *
+import fnmatch
 from shadowloss.settingsparser import SettingsParser
 from shadowloss.level import Level
 import shadowloss.cairogame as cairogame
 import shadowloss.various as various
 import shadowloss.generalinformation as ginfo
+
+INVALID_FILENAMES = (
+    '*~', '#*#'
+    )
 
 config_file_translations = {
     'verbose': 'term_verbose',
@@ -108,6 +113,13 @@ class World(SettingsParser):
         self.set_current_level((self.current_level_index + 1) %
                                len(self.levels))
 
+    def accepts_filename(self, fn):
+        for x in INVALID_FILENAMES:
+            if fnmatch.fnmatch(fn, x):
+                return False
+
+        return True
+
     def start(self):
         pygame.display.init()
         pygame.font.init()
@@ -126,7 +138,9 @@ class World(SettingsParser):
         if not self.levels:
             for x in os.walk(os.path.join(self.data_dir, 'levels')):
                 for y in x[2]:
-                    self.levels.append(os.path.join(x[0], y))
+                    if self.accepts_filename(y):
+                        self.levels.append(os.path.join(x[0], y))
+
         self.levels = [self.create_level(x) for x in self.levels]
         self.set_current_level(0)
 
@@ -299,6 +313,10 @@ class World(SettingsParser):
     def draw_wall(self, start, end, color=(255, 255, 255)):
         start = self.real_point(start, 0)
         end = self.real_point(end, 0)
+        if start[0] == -float('inf'):
+            start[0] = -1
+        if end[0] == float('inf'):
+            end[0] = self.real_size[0] + 1
         end[1] += self.real_size[1]
         size = [end[i] - start[i] for i in range(2)]
         rect = pygame.Rect(start, size)

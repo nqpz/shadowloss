@@ -75,7 +75,10 @@ def create(parent):
     s.add_line('body', 'head',
                stick.LinearChange((3, -1, 90),
                                   (3, 0, 90, 50), measure='speed'),
-               lambda info: 20)
+               lambda info: 20, True)
+    s.add_line('head', 'eye',
+               lambda info: 50,
+               lambda info: 20, True)
     s.add_circle('head', lambda info: 12)
     return s
 

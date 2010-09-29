@@ -30,7 +30,7 @@ import shadowloss.generalinformation as ginfo
 try:
     from termcolor import colored
 except ImportError:
-    from iidit.external.termcolor import colored
+    from shadowloss.external.termcolor import colored
 
 def error(msg, done=None, pre=None, **kwds):
     errstr = str(msg) + '\n'

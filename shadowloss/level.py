@@ -351,10 +351,13 @@ class Level(object):
                                   self.parent.virtual_size[0] / 2, 0))
 
         # Draw stickfigure
-        self.stickfigure.draw(self.time, self.speed, self.body_color)
+        objs, points, size = self.stickfigure.draw(
+            self.time, self.speed, self.body_color)
 
+        self.parent.draw_stickfigure_circle(points['eye'], 5, size, (0,
+        0, 255))
         # Draw start and end wall
-        self.parent.draw_wall(-1, self.parent.virtual_size[0] / 2 -
+        self.parent.draw_wall(-float('inf'), self.parent.virtual_size[0] / 2 -
                                self.pos, self.body_color)
         self.parent.draw_wall(self.length - self.pos + self.parent.virtual_size[0] /
-                              2, self.parent.virtual_size[0] + 1, self.body_color)
+                              2, float('inf'), self.body_color)

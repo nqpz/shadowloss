@@ -26,6 +26,19 @@ you're not passing it on your running path, your mind gets chaotic,
 which makes you run even faster. You are forced to concentrate so that
 you can come to a complete stop before you reach the wall.
 
+Later on, when you have realized the power of the alphabet, you must
+learn to accept how numbers behave as well. The thing is, passing
+through numbers make you go faster for a while. If you cross the
+number 3, your speed will be greater for 3 seconds, after which it
+will decrease. This effect will be achieved with all numbers. The
+reason why you react this way is because you *like* numbers. You
+simply don't have to concentrate to understand them --- and because of
+that, you speed up, but only until you realize that you should slow
+down. The higher the number, the longer it takes for you to realize
+that. If you feel like it, you can always destroy numbers with your
+laser beam, but sometimes it may be beneficial to speed up
+temporarily.
+
 
 License
 =======
@@ -112,10 +125,6 @@ shadowloss is written in Python and uses Git for branches. To get the
 latest branch, get it from gitorious.org like this::
 
   $ git clone git://gitorious.org/shadowloss/shadowloss.git
-
-A number of shadowloss mods can be fetched using git as well::
-
-  $ git clone git://gitorious.org/shadowloss/shadowloss-mods.git
 
 
 This document
