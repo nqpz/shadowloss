@@ -144,6 +144,8 @@ class World(SettingsParser):
         self.levels = [self.create_level(x) for x in self.levels]
         self.set_current_level(0)
 
+        self.shooting = False
+
         self.clock = pygame.time.Clock()
         if self.max_fps is not None:
             self.tick = lambda: self.clock.tick(self.max_fps)
@@ -265,9 +267,15 @@ class World(SettingsParser):
             letters = []
             for x in pygame.event.get():
                 if x.type == KEYDOWN:
-                    letter = x.unicode.lower()
-                    if letter:
-                        letters.append(letter)
+                    if x.key == K_SPACE:
+                        self.shooting = True
+                    else:
+                        letter = x.unicode.lower()
+                        if letter:
+                            letters.append(letter)
+                elif x.type == KEYUP:
+                    if x.key == K_SPACE:
+                        self.shooting = False
                 elif x.type == QUIT:
                     done = True
             self.current_level.update(letters)
@@ -277,6 +285,9 @@ class World(SettingsParser):
     def print_debug_information(self):
         print 'FPS:', self.clock.get_fps()
 
+    # Programmer's note: Sorry about all these different
+    # point-to-another-point functions. It is messy.
+    
     def center_point(self, p, rect):
         """Center a point in the window based on a stickfigure frame"""
         x = ((self.virtual_size[0] - rect[0]) / 2 + p[0]) * \
@@ -296,6 +307,38 @@ class World(SettingsParser):
         y = self.screen_offset[1] + y * self.disp_zoom
         return [x, y]
 
+    def true_point(self, p, man_pos, x_real=None, y_real=None):
+        """Convert a point's coordinates to something useful"""
+        if x_real:
+            x = p[0] - man_pos + self.real_size[0] / 2 + \
+                self.screen_offset[0]
+        else:
+            x = (p[0] - man_pos + self.virtual_size[0] / 2) * \
+                self.disp_zoom + self.screen_offset[0]
+        if y_real:
+            y = self.real_size[1] - p[1] + self.screen_offset[1]
+        else:
+            y = (self.virtual_size[1] - p[1]) * self.disp_zoom \
+                + self.screen_offset[1]
+
+        return x, y
+
+    def draw_circle(self, pos, radius, man_pos, color=(255, 255, 255),
+        x_real=None, y_real=None):
+        radius = int(radius * self.disp_zoom)
+        pos = self.true_point(pos, man_pos, x_real, y_real)
+        cairogame.draw_circle(color, pos, radius)
+        return pos
+
+    def draw_line(self, p1, p2, line_width, color=(255, 255, 255),
+                  no_point_conversion=False):
+        if not no_point_conversion:
+            p1 = self.true_point(p1)
+            p2 = self.true_point(p2)
+        line_width *= self.disp_zoom
+        cairogame.draw_line(color, p1, p2, line_width)
+        return p1, p2
+
     def draw_stickfigure_line(self, p1, p2, body_rect, color=(255, 255, 255)):
         p1 = self.center_point(p1, body_rect)
         p2 = self.center_point(p2, body_rect)
@@ -306,6 +349,7 @@ class World(SettingsParser):
         pos = self.center_point(pos, body_rect)
         radius = int(radius * self.disp_zoom)
         cairogame.draw_circle(color, pos, radius)
+        return pos
 
     def finish_stickfigure_draw(self):
         cairogame.finish_draw()

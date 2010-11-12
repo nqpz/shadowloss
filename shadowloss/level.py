@@ -106,6 +106,11 @@ class Level(object):
                           self.defaults.letter_duration
                           or self.defaults.number_duration) * 1000)
 
+                settings.destruction_duration = int(
+                    t_get('ddur', typ == 'letter' and
+                          self.defaults.letter_destruction_duration
+                          or self.defaults.number_destruction_duration) * 1000)
+
                 if typ == 'letter':
                     settings.speed_decrease = t_get(
                         'dec', self.defaults.speed_decrease)
@@ -127,6 +132,7 @@ class Level(object):
                 info.settings = settings
                 info.surface = surf
                 info.width = surf.get_size()[0]
+                info.height = surf.get_size()[1]
 
                 parts.append(info)
 
@@ -139,7 +145,10 @@ class Level(object):
             info.parts = parts
             info.current_part = 0
             info.current_time = None
+            info.time_shooting = None
             info.font_height = obj_height
+            info.avg_height = sum([p.height for p in parts]) / len(parts)
+            info.avg_width = sum([p.width for p in parts]) / len(parts)
             
             objects.append(info)
 
@@ -205,6 +214,16 @@ class Level(object):
             data.get('default number duration')
             or default_obj_dur)
 
+        ## The speed it takes for objects to be destroyed
+        default_obj_dest_dur = float(
+            data.get('default object destruction duration') or 0.3)
+        self.defaults.letter_destruction_duration = float(
+            data.get('default letter destruction duration')
+            or default_obj_dur)
+        self.defaults.number_destruction_duration = float(
+            data.get('default number destruction duration')
+            or default_obj_dur)
+
         # Objects
         self.base_letters = self.create_objects(data.get('letters'), 'letter')
         self.base_numbers = self.create_objects(data.get('numbers'), 'number')
@@ -231,6 +250,7 @@ class Level(object):
         for x in (self.base_letters, self.base_numbers):
             for y in x:
                 y.current_time = now
+                y.time_shooting = 0
                 for z in y.parts:
                     if y.type == 'letter':
                         z.temp_text = ''
@@ -321,14 +341,34 @@ class Level(object):
                 self.current_temp_speed_increase += this_speed_increase
                 self.speed += this_speed_increase
 
+        # Check for shots
+        if self.parent.shooting:
+            try:
+                self.next_obj.time_shooting += time_increase
+                part = self.next_obj.get_current_part()
+                if self.next_obj.time_shooting > \
+                        part.settings.destruction_duration:
+                    if self.next_obj.type == 'letter':
+                        self.letters.remove(self.next_obj)
+                    elif self.next_obj.type == 'number':
+                        self.numbers.remove(self.next_obj)
+            except AttributeError:
+                pass
+
+        # Find the next object
+        next_obj_pos = [float('inf'), float('inf')]
+        self.next_obj = None
         # See if objects with more than one part needs changing into
         # the next parts
         for x in (self.letters, self.numbers):
             for y in x:
+                if self.pos < y.pos and y.pos < next_obj_pos:
+                    next_obj_pos = y.pos
+                    self.next_obj = y
                 if len(y.parts) == 1:
                     continue
-                current_duration = (now - y.current_time).microseconds / 1000.0
                 part = y.get_current_part()
+                current_duration = (now - y.current_time).microseconds / 1000.0
                 if current_duration >= part.settings.duration:
                     y.current_time = now
                     y.current_part = (y.current_part + 1) % len(y.parts)
@@ -349,13 +389,24 @@ class Level(object):
                 self.parent.blit(y.get_current_part().surface,
                                  (y.pos - self.pos +
                                   self.parent.virtual_size[0] / 2, 0))
-
         # Draw stickfigure
         objs, points, size = self.stickfigure.draw(
             self.time, self.speed, self.body_color)
 
-        self.parent.draw_stickfigure_circle(points['eye'], 5, size, (0,
-        0, 255))
+        eye_pos = self.parent.draw_stickfigure_circle(
+            points['eye'], 3, size, (0, 0, 255))
+
+        if self.next_obj and self.status == PLAYING:
+            shot_pos = self.parent.draw_circle(
+                [self.next_obj.pos, self.next_obj.avg_height / 2], 25
+            * (self.next_obj.time_shooting /
+               self.next_obj.get_current_part().settings.destruction_duration),
+                self.pos, (255, 0, 255), None, True)
+            
+            if self.parent.shooting:
+                self.parent.draw_line(eye_pos, shot_pos, 6,
+                                      (0, 0, 255), True)
+        
         # Draw start and end wall
         self.parent.draw_wall(-float('inf'), self.parent.virtual_size[0] / 2 -
                                self.pos, self.body_color)
