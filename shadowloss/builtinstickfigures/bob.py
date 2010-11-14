@@ -57,6 +57,9 @@ def create(parent):
                                                       measure='speed'),
                          lambda info: 20)
     stickfigure.add_circle('C', lambda info: 13)
+    stickfigure.add_line('C', 'eye',
+               lambda info: 30,
+               lambda info: 7, True)
     return stickfigure
 
 if __name__ == '__main__':

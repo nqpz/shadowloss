@@ -16,19 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with shadowloss-levels.  If not, see <http://www.gnu.org/licenses/>.
 
-##[ Name        ]## lvl1 [shadowloss-level]
+##[ Name        ]## tut2 [shadowloss-level]
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
 ##[ Description ]## A basic level
-##[ Start date  ]## 2010 September 14
+##[ Start date  ]## 2010 November 14
 
-length = 1000
+length = 700
 stickfigure = zorna
-start speed = 1.7
-stop speed = 0.2
+start speed = 0.6
+stop speed = 0.1
 speed increase per second = 0.1
 
-letters = 30:A[dec=1.0], 120:B, \
-          210:C:cc:S(dur=0.2):cs[dec=0.3;dur=0.7], \
-          340:D, 500:E, 550:F, 660:G, 800:H, 910:I
-
-numbers = 400:0.5:0.6:0.7:0.6[dur=0.4], 700:1
+letters = \
+        100:A:B:C[dec=0.2], \
+        300:H(dur=0.3):e(dur=0.4):l(dur=0.5):l(dur=0.6):o(dur=0.7)[dec=0.2], \
+        500:Bye[dec=1.9]

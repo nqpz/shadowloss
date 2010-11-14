@@ -75,7 +75,11 @@ class Level(object):
 
         obj_height = typ == 'letter' and self.letter_height \
                 or self.number_height
-        
+
+        if lst is None:
+            return objects
+        elif isinstance(lst, basestring):
+            lst = [lst]
         for x in lst:
             # Split the entry into its parts and its global settings
             contents = x.split('[')
@@ -172,7 +176,7 @@ class Level(object):
         self.start_pos = float(data.get('start position') or 0.0)
 
         # Length of level
-        self.length = data['length']
+        self.length = data.get('length') or 500
 
         # Speed increase when pressing a wrong letter
         self.speed_increase = float(
@@ -184,7 +188,7 @@ class Level(object):
 
         # Stickfigure to be used
         self.stickfigure = builtinstickfigures[
-            data.get('stickfigure') or 'bob'].create(self.parent)
+            data.get('stickfigure') or 'zorna'].create(self.parent)
 
         # Font heights
         font_height = data.get('font height')
@@ -228,6 +232,8 @@ class Level(object):
         self.base_letters = self.create_objects(data.get('letters'), 'letter')
         self.base_numbers = self.create_objects(data.get('numbers'), 'number')
 
+        self.parent.debug_print('level %s created' % repr(self.path))
+        
         # Prepare
         self.start()
 
@@ -258,6 +264,9 @@ class Level(object):
 
         self.body_color = (255, 255, 255)
         self.parent.fill_borders(self.body_color)
+        self.color_foreground()
+
+        self.parent.debug_print('level %s started' % repr(self.path))
 
         self.status = PLAYING
 
@@ -273,11 +282,14 @@ class Level(object):
         self.status = LOST
         self.body_color = (255, 0, 0)
         self.color_foreground()
+        self.parent.shooting = False
+        self.parent.debug_print('level %s lost' % repr(self.path))
 
     def win(self):
         self.status = WON
         self.body_color = (0, 255, 0)
         self.color_foreground()
+        self.parent.debug_print('level %s won' % repr(self.path))
 
     def update(self, letters=[]):
         """Update the level"""

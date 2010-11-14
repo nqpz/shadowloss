@@ -117,6 +117,81 @@ interface). Config files use a ``property = value`` syntax
 (e.g. ``fullscreen = true`` or ``resolution = 640x480``) separated by
 newlines.
 
+Controls
+--------
+
+::
+
+  <letter>: letter
+  <SPACE>:  when playing:           laser beam
+  <SPACE>:  when level is finished: next level
+  <RIGHT>:  when level is finished: next level
+  <LEFT>:   when level is finished: previous level
+  r:        when level is finished: restart level
+  ESCAPE:   quit program
+
+
+Creating levels
+===============
+
+shadowloss levels are simple config files. They consist of global and
+local options. **Global options:**
+
+* ``start speed`` (what speed to start at, default 1.0)
+* ``stop speed`` (what speed to stop at, default 0.0)
+* ``start position`` (where to start, default 0.0)
+* ``length`` (length of level, default 500)
+* ``speed increase`` (when pressing a wrong letter, default 0.5)
+* ``speed increase per second`` (default 0.0)
+* ``stickfigure`` (what stickfigure to use, currently only 'zorna' and
+  'bob', default 'zorna')
+* ``font height``
+* ``letter height`` (default 75, overrides 'font height')
+* ``number height`` (default 40, overrides 'font height')
+* ``default temporary speed increase`` (during number penalties)
+* ``default speed decrease`` (when pressing a correct letter)
+* ``default object duration`` (the duration of a subobject, default 0.5)
+* ``default letter duration`` (overrides 'default object duration')
+* ``default number duration`` (overrides 'default object duration')
+* ``default object destruction duration`` (the time it takes for a laser
+  beam to destroy the object, default 0.3)
+* ``default letter destruction duration`` (overrides 'default object
+  duration')
+* ``default number destruction duration`` (overrides 'default object
+  duration')
+* ``letters``
+* ``numbers``
+
+Except for ``letters`` and ``numbers``, all of these options need only
+simple numbers assigned to them. ``letters`` and ``numbers`` are
+lists, and they offer support for local options. **Syntax:**
+
+::
+
+  letters|numbers = <position>:<letter1>(opt1=val1;opt2=val2;...):\
+  <letter2>:...[opt3=val3;opt4=val4]
+
+Options enclosed in ``()`` are local options, while those in ``[]``
+are global (object-wise). **Local options:**
+
+* ``letters``
+
+  + ``dec`` (overrides ``default speed decrease``)
+  + ``dur`` (overrides ``default letter duration``)
+  + ``ddur`` (overrides ``default letter destruction duration``)
+
+* ``numbers``
+
+  + ``inc`` (overrides ``default temporary speed increase``)
+  + ``dur`` (overrides ``default number duration``)
+  + ``ddur`` (overrides ``default number destruction duration``)
+
+**Example:**
+
+::
+
+  letters = 230:A(dec=0.3;dur=1;ddur=0.1):Q:R[dur=0.5]
+  
 
 Developing
 ==========

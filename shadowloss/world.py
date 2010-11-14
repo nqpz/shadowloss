@@ -29,7 +29,7 @@ import pygame
 from pygame.locals import *
 import fnmatch
 from shadowloss.settingsparser import SettingsParser
-from shadowloss.level import Level
+from shadowloss.level import *
 import shadowloss.cairogame as cairogame
 import shadowloss.various as various
 import shadowloss.generalinformation as ginfo
@@ -109,6 +109,11 @@ class World(SettingsParser):
             self.current_level = self.levels[num]
         self.current_level_index = num
 
+    def previous_level(self):
+        if self.current_level_index > 0:
+            n = self.current_level_index - 1
+            self.set_current_level(n)
+
     def next_level(self):
         self.set_current_level((self.current_level_index + 1) %
                                len(self.levels))
@@ -140,7 +145,8 @@ class World(SettingsParser):
                 for y in x[2]:
                     if self.accepts_filename(y):
                         self.levels.append(os.path.join(x[0], y))
-
+            self.levels.sort()
+                        
         self.levels = [self.create_level(x) for x in self.levels]
         self.set_current_level(0)
 
@@ -258,6 +264,10 @@ class World(SettingsParser):
         self.bgsurface = pygame.Surface(self.window_size).convert()
         self.bgsurface.fill((0, 0, 0))
 
+    def debug_print(self, text):
+        if self.show_debug:
+            print text
+
     def run(self):
         done = False
         while not done:
@@ -267,15 +277,26 @@ class World(SettingsParser):
             letters = []
             for x in pygame.event.get():
                 if x.type == KEYDOWN:
-                    if x.key == K_SPACE:
-                        self.shooting = True
+                    if x.key == K_ESCAPE:
+                        done = True
+                    if self.current_level.status == PLAYING:
+                        if x.key == K_SPACE:
+                            self.shooting = True
+                        else:
+                            letter = x.unicode.lower()
+                            if letter:
+                                letters.append(letter)
                     else:
-                        letter = x.unicode.lower()
-                        if letter:
-                            letters.append(letter)
+                        if x.key == K_SPACE or x.key == K_RIGHT:
+                            self.next_level()
+                        elif x.key == K_LEFT:
+                            self.previous_level()
+                        elif x.key == K_r:
+                            self.current_level.start()
                 elif x.type == KEYUP:
                     if x.key == K_SPACE:
-                        self.shooting = False
+                        if self.current_level.status == PLAYING:
+                            self.shooting = False
                 elif x.type == QUIT:
                     done = True
             self.current_level.update(letters)

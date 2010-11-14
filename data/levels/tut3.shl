@@ -1,0 +1,36 @@
+# shadowloss-levels: levels designed for stickmen
+# Copyright (C) 2010  Niels Serup
+
+# This file is part of shadowloss-levels.
+#
+# shadowloss-levels is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# shadowloss-levels is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with shadowloss-levels.  If not, see <http://www.gnu.org/licenses/>.
+
+##[ Name        ]## tut3 [shadowloss-level]
+##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
+##[ Description ]## A basic level
+##[ Start date  ]## 2010 November 14
+
+length = 909
+stickfigure = bob
+start speed = 0.7
+stop speed = 0.175
+speed increase per second = 0.15
+default number duration = 5
+default letter duration = 0.9
+
+letters = \
+        200:abc:def[dec=.4], \
+        700:Q[dec=0.45], 800:Q[dec=0.9]
+
+numbers = 333:3(dur=3), 444:4(dur=4), 555:5

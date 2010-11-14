@@ -52,6 +52,12 @@ except ImportError:
     setproctitle = various.nothing
 
 class NewOptionParser(OptionParser):
+    def format_description(self, formatter):
+        return self.description
+
+    def format_epilog(self, formatter):
+        return self.epilog
+    
     def error(self, msg, done=False, **kwds):
         various.error(msg, done, self.prog + ': error', **kwds)
 
@@ -60,7 +66,24 @@ parser = NewOptionParser(
     usage='Usage: %prog [OPTION]... [LEVEL]...',
     description=ginfo.program_description,
     version=ginfo.version_info,
-    epilog='Being a stickman with no shadow, life can be tough. But don\'t run too fast!')
+    epilog='''
+Being a stickman with no shadow, life can be tough. But don\'t run too
+fast!
+
+Objective: Win by pressing on your keyboard the letters appearing on
+your screen when your stickfigure passes them, so that your
+stickfigure can come to a halt. Avoid the numbers by shooting them
+with your eye laser.
+
+Controls:
+<letter>: letter
+<SPACE>:  when playing:           laser beam
+<SPACE>:  when level is finished: next level
+<RIGHT>:  when level is finished: next level
+<LEFT>:   when level is finished: previous level
+r:        when level is finished: restart level
+ESCAPE:   quit program
+''')
 parser.add_option('-c', '--config-file', dest='config_file_path', metavar='PATH',
                   help='set the path to your config file (defaults to "$HOME/.shadowloss.config")',
                   default=os.path.expanduser('~/.shadowloss.config'))
