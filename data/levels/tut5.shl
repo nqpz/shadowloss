@@ -22,7 +22,7 @@
 ##[ Start date  ]## 2010 November 14
 
 length = 760
-stickfigure = bob
+stickfigure = zorna
 start speed = 0.3
 stop speed = 0.1
 speed increase per second = 0.02

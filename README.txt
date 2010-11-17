@@ -3,8 +3,6 @@
 shadowloss
 ==========
 
-There's no release out yet.
-
 You have no shadow, your limbs are all sticks, and your movements look
 funny. You have been transformed into a stickman.
 
@@ -28,16 +26,15 @@ you can come to a complete stop before you reach the wall.
 
 Later on, when you have realized the power of the alphabet, you must
 learn to accept how numbers behave as well. The thing is, passing
-through numbers make you go faster for a while. If you cross the
-number 3, your speed will be greater for 3 seconds, after which it
-will decrease. This effect will be achieved with all numbers. The
-reason why you react this way is because you *like* numbers. You
-simply don't have to concentrate to understand them --- and because of
-that, you speed up, but only until you realize that you should slow
-down. The higher the number, the longer it takes for you to realize
-that. If you feel like it, you can always destroy numbers with your
-laser beam, but sometimes it may be beneficial to speed up
-temporarily.
+through numbers make you go faster for a while. For example, if you
+cross the number 3, your speed will be greater for 3 seconds, after
+which it will decrease. The reason why you react this way is because
+you *like* numbers. You simply don't have to concentrate to understand
+them --- and because of that, you speed up, but only until you realize
+that you should slow down. The higher the number, the longer it takes
+for you to realize that. If you feel like it, you can always destroy
+numbers with your laser beam, but sometimes it may be beneficial to
+speed up temporarily.
 
 
 License
@@ -114,7 +111,7 @@ options. Running ``shadowloss --help`` will show a list of available
 command-line options. These options can also be specified in config
 files, but they cannot be changed in-game (that would clutter the
 interface). Config files use a ``property = value`` syntax
-(e.g. ``fullscreen = true`` or ``resolution = 640x480``) separated by
+(e.g. ``fullscreen = true`` or ``size = 640x480``) separated by
 newlines.
 
 Controls

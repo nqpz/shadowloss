@@ -97,7 +97,8 @@ class World(SettingsParser):
             self.error_function(msg, done, color=self.term_color_errors)
 
     def status(self, msg):
-        print ginfo.program_name + ': ' + msg
+        if self.term_verbose:
+            print ginfo.program_name + ': ' + msg
 
     def create_level(self, path):
         return Level(self, path)
@@ -108,6 +109,7 @@ class World(SettingsParser):
         else:
             self.current_level = self.levels[num]
         self.current_level_index = num
+        self.current_level.switch_hook()
 
     def previous_level(self):
         if self.current_level_index > 0:
@@ -157,6 +159,11 @@ class World(SettingsParser):
             self.tick = lambda: self.clock.tick(self.max_fps)
         else:
             self.tick = self.clock.tick
+
+        if not self.mute:
+            pygame.mixer.music.load(os.path.join(self.data_dir,
+                                                 'bgmusic.ogg'))
+            pygame.mixer.music.play(-1)
         self.run()
 
     def end(self):

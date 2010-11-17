@@ -278,6 +278,9 @@ class Level(object):
                 for z in y.parts:
                     z.surface = self.parent.create_text(z.string, y.font_height, self.body_color)
 
+    def switch_hook(self):
+        self.parent.fill_borders(self.body_color)        
+
     def lose(self):
         self.status = LOST
         self.body_color = (255, 0, 0)

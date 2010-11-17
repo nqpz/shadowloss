@@ -31,6 +31,6 @@ default letter duration = 0.9
 
 letters = \
         200:abc:def[dec=.4], \
-        700:Q[dec=0.45], 800:Q[dec=0.9]
+        700:Q[dec=0.45], 800:Q[dec=2]
 
 numbers = 333:3(dur=3), 444:4(dur=4), 555:5
