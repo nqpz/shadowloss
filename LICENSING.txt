@@ -26,7 +26,7 @@ Author:  Niels Serup <ns@metanohi.org>
 Copyright © 2010 Niels Serup
 Own work
 ########################################################
-data/bgmusic.ogg
+data/music/bgmusic.ogg
 License: Free Art License
 Author:  Dan'S (http://dan-s.hautetfort.com/)
 Album:   DanS&Co

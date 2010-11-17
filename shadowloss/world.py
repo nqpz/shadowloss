@@ -161,8 +161,8 @@ class World(SettingsParser):
             self.tick = self.clock.tick
 
         if not self.mute:
-            pygame.mixer.music.load(os.path.join(self.data_dir,
-                                                 'bgmusic.ogg'))
+            pygame.mixer.music.load(
+                os.path.join(self.data_dir, 'music', 'bgmusic.ogg'))
             pygame.mixer.music.play(-1)
         self.run()
 
