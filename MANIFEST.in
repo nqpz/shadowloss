@@ -1,4 +1,5 @@
 include *.txt
+include data/*/*
 include scripts/shadowloss-local
 include logo/shadowloss-logo.svg
 include logo/convert-to-png.sh

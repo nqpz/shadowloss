@@ -1,4 +1,4 @@
-The program files of Naghni are licensed under the GNU
+The program files of shadowloss are licensed under the GNU
 General Public License version 3 (or any later version).
 shadowloss is copyright © 2010 Niels Serup.
 

@@ -74,10 +74,28 @@ Dependencies
 
 Python 2.5+ is probably a requirement.
 
-``qvikconfig``
+shadowloss depends on cairo and cairo's Python bindings for generating
+images. To install it, do one of these things:
+
+* For DEB-based distros (Debian etc.): type ``apt-get install python-cairo``
+* For RPM-based distros (Fedora etc.): type ``yum install pycairo``
+* For other distros: do something similar or get it at
+  http://cairographics.org/download/
+
+shadowloss depends on PyGame 1.8.1+ (perhaps earlier versions are also
+supported) for showing generated images. To install it, do one of
+these things:
+
+* For DEB-based distros (Debian etc.): type ``apt-get install python-pygame``
+* For RPM-based distros (Fedora etc.): type ``yum install pygame``
+* For other distros: do something similar or get it at
+  http://pygame.org/download.shtml
+
+shadowloss depends on qvikconfig for parsing config files.
+
  + Web address: http://pypi.python.org/pypi/qvikconfig/
  + License: GPLv3+
- + Installing: ``$ sudo easy_install qvikconfig``
+ + Installing: ``easy_install qvikconfig``
  + Author: Niels Serup
 
 Note that ``qvikconfig`` is included with shadowloss, so you don't really
