@@ -52,19 +52,7 @@ the details in the file LICENSING.txt.
 Installing
 ==========
 
-Way #1
-------
-Just run this (requires that you have python-setuptools installed)::
-
-  $ sudo easy_install shadowloss
-
-Way #2
-------
-Get the newest version of shadowloss at
-http://metanohi.org/projects/shadowloss/ or at
-http://pypi.python.org/pypi/shadowloss
-
-Extract the downloaded file and run this in a terminal::
+Run this in a terminal::
 
   # python setup.py install
 
