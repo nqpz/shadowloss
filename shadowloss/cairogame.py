@@ -28,38 +28,31 @@
 import cairo
 import math
 
-CONTEXT = None
+SURFACE = None
 
 def set_screen(pygame_surf):
-    global CONTEXT
-    CONTEXT = get_cairo_context(pygame_surf)
+    global SURFACE
+    SURFACE = pygame_surf
 
-def get_cairo_context(pygame_surf):
-    width, height = pygame_surf.get_size()
-    cairo_surface = cairo.ImageSurface.create_for_data(
-        pygame_surf.get_buffer(), cairo.FORMAT_ARGB32,
+def get_cairo_ctx(surf):
+    width, height = surf.get_size()
+    surf = cairo.ImageSurface.create_for_data(
+        surf.get_buffer(), cairo.FORMAT_ARGB32,
         width, height, width * 4)
-    ctx = cairo.Context(cairo_surface)
-    return ctx
+    return cairo.Context(surf)
 
 def draw_line(color, start_pos, end_pos, line_width, surf=None):
-    if surf is None:
-        ctx = CONTEXT
-    else:
-        ctx = get_cairo_context(surf)
-
+    ctx = get_cairo_ctx(surf or SURFACE)
     ctx.set_source_rgb(*color)
     ctx.set_line_width(line_width)
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
     ctx.move_to(*start_pos)
     ctx.line_to(*end_pos)
     ctx.stroke()
+    del ctx
 
 def draw_circle(color, pos, radius, line_width=0, surf=None):
-    if surf is None:
-        ctx = CONTEXT
-    else:
-        ctx = get_cairo_context(surf)
+    ctx = get_cairo_ctx(surf or SURFACE)
     if line_width > 0:
         ctx.set_line_width(line_width)
 
@@ -69,6 +62,7 @@ def draw_circle(color, pos, radius, line_width=0, surf=None):
         ctx.stroke()
     else:
         ctx.fill()
+    del ctx
 
 def finish_draw(surf=None):
     pass
