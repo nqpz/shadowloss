@@ -1,6 +1,6 @@
 The program files of shadowloss are licensed under the GNU
 General Public License version 3 (or any later version).
-shadowloss is copyright © 2010 Niels Serup.
+shadowloss is copyright © 2010, 2020 Niels Serup.
 
 Data files, described more carefully below, differ in licensing as
 well as authors. Note that non-Niels Serup authors are not part of the

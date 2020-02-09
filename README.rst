@@ -206,7 +206,7 @@ latest branch, get it from gitorious.org like this::
 
 This document
 =============
-Copyright (C) 2010  Niels Serup
+Copyright (C) 2010, 2020  Niels Serup
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright
