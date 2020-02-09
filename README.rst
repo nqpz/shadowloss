@@ -42,8 +42,7 @@ License
 
 shadowloss is free software under the terms of the GNU General Public
 License version 3 (or any later version). The author of shadowloss is
-Niels Serup, contactable at ns@metanohi.org. This is version 0.1.0 of
-the program.
+Niels Serup. This is version 0.1.0 of the program.
 
 The libraries used by shadowloss are GPL-compatible.
 
